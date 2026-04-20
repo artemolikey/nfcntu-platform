@@ -1,0 +1,91 @@
+<section class="page-section">
+  <div class="container">
+    <div class="page-heading">
+      <div>
+        <span class="eyebrow">Адміністрування</span>
+        <h1>Користувачі системи</h1>
+        <p>Пошук, фільтрування та базове керування активністю облікових записів.</p>
+      </div>
+    </div>
+
+    <form action="/admin/users" method="get" class="card filters-card">
+      <div class="form-grid filters-grid users-filters-grid">
+        <div class="field">
+          <label for="search">Пошук</label>
+          <input id="search" name="search" type="text" value="<%= filters.search || '' %>" placeholder="ПІБ або email" />
+        </div>
+        <div class="field">
+          <label for="role">Роль</label>
+          <select id="role" name="role">
+            <option value="">Усі ролі</option>
+            <option value="customer" <%= filters.role === 'customer' ? 'selected' : '' %>>Замовник</option>
+            <option value="performer" <%= filters.role === 'performer' ? 'selected' : '' %>>Виконавець</option>
+            <option value="admin" <%= filters.role === 'admin' ? 'selected' : '' %>>Адміністратор</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="specialtyId">Спеціальність</label>
+          <select id="specialtyId" name="specialtyId">
+            <option value="">Усі спеціальності</option>
+            <% referenceData.specialties.forEach((specialty) => { %>
+              <option value="<%= specialty.id %>" <%= String(filters.specialtyId || '') === String(specialty.id) ? 'selected' : '' %>><%= specialty.code %> · <%= specialty.short_name %></option>
+            <% }) %>
+          </select>
+        </div>
+        <div class="field checkbox-field">
+          <label class="checkbox-label">
+            <input type="checkbox" name="includeInactive" value="true" <%= filters.includeInactive ? 'checked' : '' %> />
+            <span>Показувати неактивних</span>
+          </label>
+        </div>
+      </div>
+      <div class="filters-actions">
+        <button type="submit" class="btn btn-primary">Застосувати</button>
+        <a href="/admin/users" class="btn btn-outline">Скинути</a>
+      </div>
+    </form>
+
+    <article class="card section-card top-gap">
+      <div class="section-card-header">
+        <h2>Список користувачів</h2>
+      </div>
+      <div class="data-table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Користувач</th>
+              <th>Роль</th>
+              <th>Спеціальність</th>
+              <th>Рейтинг / Репутація</th>
+              <th>Статус</th>
+              <th>Дія</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% users.forEach((user) => { %>
+              <tr>
+                <td>
+                  <strong><%= user.full_name %></strong>
+                  <div class="table-subtext"><%= user.email %></div>
+                  <div class="table-subtext"><%= user.group_code || 'Без групи' %></div>
+                </td>
+                <td><%= roleLabels[user.role] || user.role %></td>
+                <td><%= user.specialty_title || '—' %></td>
+                <td>
+                  <strong><%= Number(user.rating_avg || 0).toFixed(2) %></strong>
+                  <div class="table-subtext"><%= user.reputation_points || 0 %> балів · <%= user.level_label %></div>
+                </td>
+                <td><span class="status-badge <%= user.is_active ? 'status-completed' : 'status-needs_clarification' %>"><%= user.is_active ? 'Активний' : 'Неактивний' %></span></td>
+                <td>
+                  <form action="/admin/users/<%= user.id %>/toggle-active" method="post" class="inline-form">
+                    <button type="submit" class="btn btn-outline btn-sm"><%= user.is_active ? 'Деактивувати' : 'Активувати' %></button>
+                  </form>
+                </td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+    </article>
+  </div>
+</section>

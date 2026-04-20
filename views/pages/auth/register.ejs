@@ -1,0 +1,99 @@
+<section class="auth-section">
+  <div class="container narrow-container wide-auth-container">
+    <div class="auth-card card">
+      <div class="auth-branding">
+        <img src="/assets/img/logo.png" alt="Логотип коледжу" class="auth-logo" />
+        <div>
+          <span class="eyebrow">Реєстрація</span>
+          <h1>Створення корпоративного облікового запису</h1>
+          <p>Заповніть базові дані профілю. Усі поля оптимізовані під реальне використання в межах коледжу.</p>
+        </div>
+      </div>
+
+      <form action="/auth/register" method="post" class="form-stack" data-reference-context>
+        <div class="form-grid two-columns">
+          <div class="field">
+            <label for="fullName">ПІБ</label>
+            <input id="fullName" name="fullName" type="text" placeholder="Повне ім'я" value="<%= formData.fullName || '' %>" required />
+            <% if (errors.fullName) { %><small class="error-text"><%= errors.fullName %></small><% } %>
+          </div>
+
+          <div class="field">
+            <label for="role">Роль</label>
+            <select id="role" name="role" required>
+              <option value="">Оберіть роль</option>
+              <option value="customer" <%= formData.role === 'customer' ? 'selected' : '' %>>Замовник</option>
+              <option value="performer" <%= formData.role === 'performer' ? 'selected' : '' %>>Виконавець</option>
+            </select>
+            <% if (errors.role) { %><small class="error-text"><%= errors.role %></small><% } %>
+          </div>
+
+          <div class="field">
+            <label for="email">Корпоративний email</label>
+            <input id="email" name="email" type="email" placeholder="name@nfcntu.ukr.education" value="<%= formData.email || '' %>" required />
+            <small class="helper-text">Реєстрація доступна тільки для корпоративних адрес коледжу.</small>
+            <% if (errors.email) { %><small class="error-text"><%= errors.email %></small><% } %>
+          </div>
+
+          <div class="field">
+            <label for="phone">Телефон</label>
+            <input id="phone" name="phone" type="text" placeholder="+380..." value="<%= formData.phone || '' %>" />
+            <small class="helper-text">Необов'язкове поле для швидкого контакту.</small>
+            <% if (errors.phone) { %><small class="error-text"><%= errors.phone %></small><% } %>
+          </div>
+
+          <div class="field">
+            <label for="password">Пароль</label>
+            <input id="password" name="password" type="password" placeholder="Не менше 8 символів" required />
+            <% if (errors.password) { %><small class="error-text"><%= errors.password %></small><% } %>
+          </div>
+
+          <div class="field">
+            <label for="confirmPassword">Підтвердження пароля</label>
+            <input id="confirmPassword" name="confirmPassword" type="password" placeholder="Повторіть пароль" required />
+            <% if (errors.confirmPassword) { %><small class="error-text"><%= errors.confirmPassword %></small><% } %>
+          </div>
+
+          <div class="field">
+            <label for="specialtyId">Спеціальність</label>
+            <select id="specialtyId" name="specialtyId" data-specialty-control data-target-group="#academicGroupId" required>
+              <option value="">Оберіть спеціальність</option>
+              <% referenceData.specialties.forEach((specialty) => { %>
+                <option value="<%= specialty.id %>" <%= String(formData.specialtyId || '') === String(specialty.id) ? 'selected' : '' %>><%= specialty.code %> · <%= specialty.title %></option>
+              <% }) %>
+            </select>
+            <% if (errors.specialtyId) { %><small class="error-text"><%= errors.specialtyId %></small><% } %>
+          </div>
+
+          <div class="field">
+            <label for="academicGroupId">Група</label>
+            <select id="academicGroupId" name="academicGroupId" data-dependent-group required>
+              <option value="">Оберіть групу</option>
+              <% referenceData.groups.forEach((group) => { %>
+                <option value="<%= group.id %>" data-specialty-id="<%= group.specialty_id %>" <%= String(formData.academicGroupId || '') === String(group.id) ? 'selected' : '' %>><%= group.code %></option>
+              <% }) %>
+            </select>
+            <small class="helper-text">Список груп можна швидко оновити у довідниках без змін інтерфейсу.</small>
+            <% if (errors.academicGroupId) { %><small class="error-text"><%= errors.academicGroupId %></small><% } %>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="bio">Короткий опис профілю</label>
+          <textarea id="bio" name="bio" rows="4" placeholder="Коротко про ваші навички, напрям навчання та інтереси."><%= formData.bio || '' %></textarea>
+          <small class="helper-text">Цей текст відображатиметься у профілі та допоможе іншим краще зрозуміти ваш досвід.</small>
+          <% if (errors.bio) { %><small class="error-text"><%= errors.bio %></small><% } %>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-block">Створити обліковий запис</button>
+      </form>
+
+      <div class="auth-footer-note">
+        <span>Вже маєте акаунт?</span>
+        <a href="/auth/login">Увійти в систему</a>
+      </div>
+    </div>
+  </div>
+
+  <script id="reference-data" type="application/json"><%- JSON.stringify(referenceData) %></script>
+</section>

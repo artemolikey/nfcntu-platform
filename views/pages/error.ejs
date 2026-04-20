@@ -1,0 +1,15 @@
+<section class="page-section error-section">
+  <div class="container narrow-container">
+    <article class="card error-card">
+      <span class="error-code"><%= statusCode || 500 %></span>
+      <h1><%= pageTitle || 'Помилка' %></h1>
+      <p><%= message || 'Сталася непередбачена помилка.' %></p>
+      <div class="card-actions centered-actions">
+        <a href="/" class="btn btn-secondary">На головну</a>
+        <% if (currentUser) { %>
+          <a href="/dashboard" class="btn btn-primary">До кабінету</a>
+        <% } %>
+      </div>
+    </article>
+  </div>
+</section>

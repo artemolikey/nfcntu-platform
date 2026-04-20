@@ -1,0 +1,37 @@
+<section class="auth-section">
+  <div class="container narrow-container">
+    <div class="auth-card card">
+      <div class="auth-branding">
+        <img src="/assets/img/logo.png" alt="Логотип коледжу" class="auth-logo" />
+        <div>
+          <span class="eyebrow">Вхід до системи</span>
+          <h1><%= appName %></h1>
+          <p>Увійдіть за корпоративною адресою коледжу, щоб працювати із замовленнями, чатами, файлами та репутацією.</p>
+        </div>
+      </div>
+
+      <form action="/auth/login" method="post" class="form-stack">
+        <div class="field">
+          <label for="email">Корпоративний email</label>
+          <input id="email" name="email" type="email" placeholder="name@nfcntu.ukr.education" value="<%= formData.email || '' %>" required />
+          <small class="helper-text">Доступні лише адреси домену <span class="mono"><%= allowedEmailDomain %></span>.</small>
+          <% if (errors.email) { %><small class="error-text"><%= errors.email %></small><% } %>
+        </div>
+
+        <div class="field">
+          <label for="password">Пароль</label>
+          <input id="password" name="password" type="password" placeholder="Ваш пароль" required />
+          <small class="helper-text">Використовуйте пароль свого корпоративного облікового запису або початкові дані, вказані в інструкції запуску.</small>
+          <% if (errors.password) { %><small class="error-text"><%= errors.password %></small><% } %>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-block">Увійти</button>
+      </form>
+
+      <div class="auth-footer-note">
+        <span>Ще не маєте облікового запису?</span>
+        <a href="/auth/register">Перейти до реєстрації</a>
+      </div>
+    </div>
+  </div>
+</section>

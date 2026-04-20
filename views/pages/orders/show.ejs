@@ -1,0 +1,205 @@
+<section class="page-section">
+  <div class="container">
+    <div class="detail-hero card">
+      <div class="detail-hero-main">
+        <div class="detail-topline">
+          <span class="status-badge status-<%= detail.order.status %>"><%= helpers.statusLabel(detail.order.status) %></span>
+          <span class="muted-text">Створено <%= helpers.formatDate(detail.order.created_at) %></span>
+        </div>
+        <h1><%= detail.order.title %></h1>
+        <p class="lead"><%= detail.order.description %></p>
+        <div class="detail-meta-grid">
+          <div><span>Замовник</span><strong><%= detail.order.customer_name %></strong></div>
+          <div><span>Виконавець</span><strong><%= detail.order.performer_name || 'Ще не призначено' %></strong></div>
+          <div><span>Спеціальність</span><strong><%= detail.order.specialty_title || '—' %></strong></div>
+          <div><span>Категорія</span><strong><%= detail.order.category_name || '—' %></strong></div>
+          <div><span>Дедлайн</span><strong><%= helpers.formatDate(detail.order.deadline) %></strong></div>
+          <div><span>Прогрес</span><strong><%= detail.order.progress %>%</strong></div>
+        </div>
+      </div>
+      <div class="detail-hero-side">
+        <div class="progress-ring-card">
+          <div class="progress-ring-label">Прогрес виконання</div>
+          <div class="progress-value"><%= detail.order.progress %>%</div>
+          <div class="progress-bar large"><span style="width: <%= detail.order.progress %>%"></span></div>
+        </div>
+        <% if (detail.permissions.canTake) { %>
+          <form action="/orders/<%= detail.order.id %>/take" method="post">
+            <button type="submit" class="btn btn-primary btn-block">Взяти в роботу</button>
+          </form>
+        <% } %>
+      </div>
+    </div>
+
+    <div class="content-grid two-wide-one-narrow top-gap">
+      <div class="main-stack">
+        <article class="card section-card">
+          <div class="section-card-header">
+            <h2>Керування замовленням</h2>
+          </div>
+          <div class="form-grid action-grid">
+            <% if (detail.permissions.canUpdateStatus) { %>
+              <form action="/orders/<%= detail.order.id %>/status" method="post" class="inline-card-form">
+                <div class="field no-margin">
+                  <label for="status">Статус</label>
+                  <select id="status" name="status">
+                    <% statusOptions.forEach((status) => { %>
+                      <% if (!(currentUser.role === 'performer' && status === 'completed')) { %>
+                        <option value="<%= status %>" <%= detail.order.status === status ? 'selected' : '' %>><%= orderStatusLabels[status] %></option>
+                      <% } %>
+                    <% }) %>
+                  </select>
+                </div>
+                <button type="submit" class="btn btn-secondary">Оновити статус</button>
+              </form>
+            <% } %>
+
+            <% if (detail.permissions.canUpdateProgress) { %>
+              <form action="/orders/<%= detail.order.id %>/progress" method="post" class="inline-card-form">
+                <div class="field no-margin">
+                  <label for="progress">Прогрес, %</label>
+                  <input id="progress" name="progress" type="number" min="0" max="100" value="<%= detail.order.progress %>" placeholder="0-100" />
+                </div>
+                <button type="submit" class="btn btn-outline">Зберегти прогрес</button>
+              </form>
+            <% } %>
+          </div>
+        </article>
+
+        <article class="card section-card" id="chat">
+          <div class="section-card-header">
+            <h2>Чат замовлення</h2>
+            <% if (detail.permissions.canUsePrivateBlocks) { %>
+              <span class="muted-text">Історія повідомлень синхронізується автоматично</span>
+            <% } %>
+          </div>
+
+          <% if (detail.permissions.canUsePrivateBlocks) { %>
+            <div class="message-thread" data-chat-order-id="<%= detail.order.id %>" data-current-user-id="<%= currentUser.id %>">
+              <div class="message-list" data-message-list>
+                <% detail.messages.forEach((message) => { %>
+                  <article class="message-item <%= message.sender_id === currentUser.id ? 'is-own' : '' %>">
+                    <div class="message-bubble">
+                      <strong><%= message.sender_name %></strong>
+                      <p><%= message.body %></p>
+                      <small><%= helpers.formatDateTime(message.created_at) %></small>
+                    </div>
+                  </article>
+                <% }) %>
+              </div>
+            </div>
+            <form action="/orders/<%= detail.order.id %>/messages" method="post" class="chat-form">
+              <textarea name="message" rows="3" placeholder="Напишіть коротке повідомлення для учасників замовлення."></textarea>
+              <button type="submit" class="btn btn-primary">Надіслати повідомлення</button>
+            </form>
+          <% } else { %>
+            <div class="empty-state small">
+              <h3>Чат стане доступним після участі в замовленні</h3>
+              <p>Повідомлення можуть бачити лише замовник, виконавець і адміністратор.</p>
+            </div>
+          <% } %>
+        </article>
+
+        <article class="card section-card" id="files">
+          <div class="section-card-header">
+            <h2>Файли</h2>
+          </div>
+          <% if (detail.permissions.canUsePrivateBlocks) { %>
+            <form action="/orders/<%= detail.order.id %>/files" method="post" enctype="multipart/form-data" class="file-upload-form">
+              <input type="file" name="attachment" />
+              <button type="submit" class="btn btn-secondary">Завантажити файл</button>
+            </form>
+            <% if (detail.files.length) { %>
+              <div class="list-stack file-list">
+                <% detail.files.forEach((file) => { %>
+                  <a href="/orders/files/<%= file.id %>/download" class="list-row list-row-link">
+                    <div>
+                      <strong><%= file.original_name %></strong>
+                      <p>Завантажив: <%= file.uploaded_by_name %></p>
+                    </div>
+                    <div class="row-meta right-align">
+                      <span><%= Math.max(1, Math.round(file.size_bytes / 1024)) %> KB</span>
+                      <span><%= helpers.formatDateTime(file.created_at) %></span>
+                    </div>
+                  </a>
+                <% }) %>
+              </div>
+            <% } else { %>
+              <p class="empty-state small">Ще немає прикріплених файлів.</p>
+            <% } %>
+          <% } else { %>
+            <div class="empty-state small">
+              <h3>Файли доступні лише учасникам</h3>
+              <p>Після взяття замовлення в роботу тут з’явиться файловий блок для обміну матеріалами.</p>
+            </div>
+          <% } %>
+        </article>
+
+        <article class="card section-card" id="review">
+          <div class="section-card-header">
+            <h2>Відгук і рейтинг</h2>
+          </div>
+          <% if (detail.order.review_id) { %>
+            <div class="review-card">
+              <div class="review-score"><%= detail.order.review_rating %> / 5</div>
+              <p><%= detail.order.review_text %></p>
+              <small>Нараховано репутаційних балів: <strong><%= detail.order.reputation_awarded %></strong></small>
+            </div>
+          <% } else if (detail.permissions.canReview) { %>
+            <form action="/orders/<%= detail.order.id %>/review" method="post" class="form-stack">
+              <div class="form-grid two-columns narrow-gaps">
+                <div class="field">
+                  <label for="rating">Оцінка</label>
+                  <select id="rating" name="rating" required>
+                    <option value="">Оберіть оцінку</option>
+                    <% for (let i = 5; i >= 1; i -= 1) { %>
+                      <option value="<%= i %>"><%= i %> / 5</option>
+                    <% } %>
+                  </select>
+                </div>
+              </div>
+              <div class="field">
+                <label for="reviewText">Текстовий відгук</label>
+                <textarea id="reviewText" name="reviewText" rows="5" placeholder="Опишіть якість виконання, сильні сторони та результат співпраці." required></textarea>
+              </div>
+              <button type="submit" class="btn btn-primary">Зберегти відгук</button>
+            </form>
+          <% } else { %>
+            <p class="empty-state small">Відгук стане доступним після завершення замовлення та підтвердження результату замовником.</p>
+          <% } %>
+        </article>
+      </div>
+
+      <aside class="sidebar-stack">
+        <article class="card section-card">
+          <div class="section-card-header">
+            <h2>Журнал активності</h2>
+          </div>
+          <div class="timeline-list">
+            <% detail.activity.forEach((item) => { %>
+              <div class="timeline-item">
+                <span class="timeline-dot"></span>
+                <div>
+                  <strong><%= item.title %></strong>
+                  <p><%= item.description || 'Опис відсутній.' %></p>
+                  <small><%= helpers.formatDateTime(item.created_at) %><% if (item.actor_name) { %> · <%= item.actor_name %><% } %></small>
+                </div>
+              </div>
+            <% }) %>
+          </div>
+        </article>
+
+        <article class="card section-card">
+          <div class="section-card-header">
+            <h2>Пам'ятка</h2>
+          </div>
+          <div class="note-list">
+            <div class="note-item">Замовник підтверджує завершення роботи та залишає відгук.</div>
+            <div class="note-item">Виконавець може оновлювати прогрес і вести переписку в межах задачі.</div>
+            <div class="note-item">Адміністратор має огляд усієї системи й доступ до контролю станів.</div>
+          </div>
+        </article>
+      </aside>
+    </div>
+  </div>
+</section>

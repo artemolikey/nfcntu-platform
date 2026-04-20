@@ -1,0 +1,25 @@
+ШВИДКИЙ СТАРТ
+
+1) Розпакуйте архів повністю.
+
+2) Для найшвидшого запуску у Windows відкрийте:
+   start-platform.bat
+
+   або в терміналі виконайте:
+   npm run start:memory
+
+3) Відкрийте в браузері:
+   http://localhost:3000
+
+4) Початковий обліковий запис адміністратора:
+   admin@nfcntu.ukr.education
+   пароль: College2025!
+
+5) Повний запуск з PostgreSQL:
+   - скопіюйте .env.example у .env
+   - вкажіть DATABASE_URL
+   - виконайте npm run db:setup
+   - виконайте npm start
+
+6) Повна інструкція:
+   дивіться README.md

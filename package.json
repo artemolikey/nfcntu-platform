@@ -1,0 +1,51 @@
+{
+  "name": "nfcntu-service-platform",
+  "version": "1.0.0",
+  "description": "Веб-платформа для розміщення та виконання замовлень студентами Надвірнянського фахового коледжу НТУ",
+  "main": "src/server.js",
+  "type": "commonjs",
+  "scripts": {
+    "dev": "nodemon src/server.js",
+    "start": "node src/server.js",
+    "db:setup": "node scripts/setup.js",
+    "smoke": "node scripts/smoke-test.js",
+    "verify": "node scripts/verify-project.js",
+    "start:memory": "node scripts/start-memory.js",
+    "db:migrate": "node scripts/run-migrations.js",
+    "db:seed": "node scripts/run-seed.js"
+  },
+  "keywords": [
+    "nodejs",
+    "express",
+    "postgresql",
+    "ejs",
+    "college-platform",
+    "diploma-project"
+  ],
+  "author": "OpenAI for diploma project packaging",
+  "license": "MIT",
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "compression": "^1.7.5",
+    "connect-pg-simple": "^10.0.0",
+    "dayjs": "^1.11.13",
+    "dotenv": "^16.4.5",
+    "ejs": "^3.1.10",
+    "express": "^4.21.2",
+    "express-ejs-layouts": "^2.5.1",
+    "express-session": "^1.18.1",
+    "express-validator": "^7.3.2",
+    "helmet": "^8.0.0",
+    "method-override": "^3.0.0",
+    "morgan": "^1.10.1",
+    "multer": "^1.4.5-lts.1",
+    "pg": "^8.13.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.7",
+    "pg-mem": "^3.0.5"
+  }
+}

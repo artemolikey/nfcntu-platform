@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="uk">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title><%= pageTitle ? `${pageTitle} — ${appName}` : appName %></title>
+    <meta name="description" content="Внутрішня платформа для розміщення та виконання замовлень студентами Надвірнянського фахового коледжу НТУ." />
+    <link rel="icon" type="image/png" href="/assets/img/favicon.png" />
+    <link rel="stylesheet" href="/assets/css/app.css" />
+  </head>
+  <body class="<%= bodyClass || '' %>">
+    <div class="site-shell">
+      <%- include('../partials/header') %>
+      <main class="site-main">
+        <%- include('../partials/alerts', { flash, formError: typeof formError !== 'undefined' ? formError : null }) %>
+        <%- body %>
+      </main>
+      <%- include('../partials/footer') %>
+    </div>
+    <script src="/assets/js/app.js" defer></script>
+  </body>
+</html>

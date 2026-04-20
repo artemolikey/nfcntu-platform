@@ -1,0 +1,53 @@
+<header class="site-header">
+  <div class="container header-shell">
+    <div class="header-top-row">
+      <a href="/" class="brand-link" aria-label="На головну">
+        <img src="/assets/img/logo.png" alt="Логотип коледжу" class="brand-logo" />
+
+        <div class="brand-copy">
+          <span class="brand-title"><%= appName || 'Платформа замовлень НФК НТУ' %></span>
+          <span class="brand-subtitle"><%= collegeName || 'Надвірнянський фаховий коледж НТУ' %></span>
+        </div>
+      </a>
+
+      <div class="header-actions">
+        <% if (currentUser) { %>
+          <div class="header-userbox">
+            <span class="header-user-role">
+              <%= (roleLabels && roleLabels[currentUser.role]) ? roleLabels[currentUser.role] : currentUser.role %>
+            </span>
+            <span class="header-user-name"><%= currentUser.fullName %></span>
+          </div>
+
+          <form action="/auth/logout" method="post" class="inline-form">
+            <button type="submit" class="btn btn-outline header-logout-btn">Вийти</button>
+          </form>
+        <% } else { %>
+          <a href="/auth/login" class="btn btn-ghost">Вхід</a>
+          <a href="/auth/register" class="btn btn-primary">Реєстрація</a>
+        <% } %>
+      </div>
+    </div>
+
+    <nav class="main-nav nav-scroll" aria-label="Основна навігація">
+      <a href="/" class="nav-link <%= currentPath === '/' ? 'is-active' : '' %>">Головна</a>
+
+      <% if (currentUser) { %>
+        <a href="/dashboard" class="nav-link <%= currentPath.startsWith('/dashboard') ? 'is-active' : '' %>">Кабінет</a>
+        <a href="/orders" class="nav-link <%= currentPath.startsWith('/orders') ? 'is-active' : '' %>">Замовлення</a>
+        <a href="/profile" class="nav-link <%= currentPath.startsWith('/profile') ? 'is-active' : '' %>">Профіль</a>
+
+        <% if (currentUser.role === 'customer' || currentUser.role === 'admin') { %>
+          <a href="/orders/new" class="nav-link <%= currentPath === '/orders/new' ? 'is-active' : '' %>">Створити замовлення</a>
+        <% } %>
+
+        <% if (currentUser.role === 'admin') { %>
+          <a href="/admin" class="nav-link <%= currentPath.startsWith('/admin') ? 'is-active' : '' %>">Адмін-панель</a>
+        <% } %>
+      <% } else { %>
+        <a href="/#how-it-works" class="nav-link">Як це працює</a>
+        <a href="/#benefits" class="nav-link">Переваги</a>
+      <% } %>
+    </nav>
+  </div>
+</header>

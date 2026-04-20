@@ -1,0 +1,264 @@
+<section class="page-section">
+  <div class="container">
+    <div class="page-heading dashboard-heading">
+      <div>
+        <span class="eyebrow">Кабінет</span>
+        <h1>Вітаємо, <%= profile.full_name %></h1>
+        <p>Роль: <strong><%= roleLabels[profile.role] || profile.role %></strong>. Тут зібрано ключові показники, активні замовлення та короткий зріз стану системи.</p>
+      </div>
+      <div class="page-actions">
+        <a href="/orders" class="btn btn-secondary">Усі замовлення</a>
+        <% if (currentUser.role === 'customer' || currentUser.role === 'admin') { %>
+          <a href="/orders/new" class="btn btn-primary">Нове замовлення</a>
+        <% } %>
+      </div>
+    </div>
+
+<div class="dashboard-layout">
+  <div class="dashboard-main-stack">
+    <% if (dashboard.type === 'admin') { %>
+<article class="card admin-summary-card">
+  <div class="admin-summary-main">
+    <div class="admin-summary-identity">
+      <div class="avatar-circle large"><%= helpers.initials(profile.full_name) %></div>
+
+      <div class="admin-summary-text">
+        <span class="admin-summary-eyebrow">Адміністратор системи</span>
+        <h2><%= profile.full_name %></h2>
+        <p><%= profile.bio || 'Керує платформою, користувачами та загальним станом системи.' %></p>
+      </div>
+    </div>
+
+    <div class="admin-summary-meta">
+      <div class="admin-meta-card">
+        <span>Рейтинг</span>
+        <strong><%= Number(profile.rating_avg || 0).toFixed(2) %></strong>
+      </div>
+      <div class="admin-meta-card">
+        <span>Репутація</span>
+        <strong><%= profile.reputation_points || 0 %></strong>
+      </div>
+      <div class="admin-meta-card">
+        <span>Рівень</span>
+        <strong><%= profile.level_label %></strong>
+      </div>
+      <div class="admin-meta-card">
+        <span>Спеціальність</span>
+        <strong><%= profile.specialty_title || '—' %></strong>
+      </div>
+    </div>
+  </div>
+
+  <div class="admin-summary-footer">
+    <div class="admin-kpi-row">
+      <div class="admin-kpi-pill">
+        <span>Користувачі</span>
+        <strong><%= dashboard.stats.users_total %></strong>
+      </div>
+      <div class="admin-kpi-pill">
+        <span>Замовники</span>
+        <strong><%= dashboard.stats.customers_total %></strong>
+      </div>
+      <div class="admin-kpi-pill">
+        <span>Виконавці</span>
+        <strong><%= dashboard.stats.performers_total %></strong>
+      </div>
+      <div class="admin-kpi-pill">
+        <span>Завершені</span>
+        <strong><%= dashboard.stats.orders_completed %></strong>
+      </div>
+    </div>
+
+<div class="admin-summary-actions">
+  <a href="/profile" class="btn btn-primary">Редагувати профіль</a>
+</div>
+  </div>
+</article>
+
+      <article class="card section-card system-overview-card">
+        <div class="section-card-header">
+          <div>
+            <h2>Огляд системи</h2>
+            <p class="section-subtitle">Ключові показники та останні замовлення платформи</p>
+          </div>
+          <a href="/admin/orders" class="text-link">Усі замовлення</a>
+        </div>
+
+        <div class="overview-strip overview-strip-expanded">
+          <div class="overview-pill">
+            <span>Усі замовлення</span>
+            <strong><%= dashboard.stats.orders_total %></strong>
+          </div>
+          <div class="overview-pill">
+            <span>Нові</span>
+            <strong><%= dashboard.stats.orders_new %></strong>
+          </div>
+          <div class="overview-pill">
+            <span>У роботі</span>
+            <strong><%= dashboard.stats.orders_in_progress %></strong>
+          </div>
+          <div class="overview-pill">
+            <span>Завершені</span>
+            <strong><%= dashboard.stats.orders_completed %></strong>
+          </div>
+          <div class="overview-pill">
+            <span>Відгуки</span>
+            <strong><%= dashboard.stats.reviews_total %></strong>
+          </div>
+        </div>
+
+        <div class="list-stack compact-list">
+          <% dashboard.recentOrders.forEach((order) => { %>
+            <a href="/orders/<%= order.id %>" class="list-row list-row-link overview-order-row">
+              <div class="overview-order-main">
+                <strong><%= order.title %></strong>
+                <p>
+                  <%= order.customer_name %>
+                  <% if (order.performer_name) { %>
+                    · <%= order.performer_name %>
+                  <% } else { %>
+                    · Виконавець ще не призначений
+                  <% } %>
+                </p>
+              </div>
+
+              <div class="row-meta right-align overview-order-meta">
+                <span class="status-badge status-<%= order.status %>"><%= orderStatusLabels[order.status] %></span>
+                <span class="progress-inline"><%= order.progress %>%</span>
+              </div>
+            </a>
+          <% }) %>
+        </div>
+      </article>
+    <% } %>
+
+    <% if (dashboard.type === 'performer') { %>
+      <div class="stats-grid four-cols">
+        <article class="card stat-card"><span class="stat-label">У роботі</span><strong class="stat-value"><%= dashboard.stats.in_progress %></strong></article>
+        <article class="card stat-card"><span class="stat-label">Потрібно уточнення</span><strong class="stat-value"><%= dashboard.stats.needs_clarification %></strong></article>
+        <article class="card stat-card"><span class="stat-label">Завершено</span><strong class="stat-value"><%= dashboard.stats.completed %></strong></article>
+        <article class="card stat-card"><span class="stat-label">Доступні нові</span><strong class="stat-value"><%= dashboard.stats.new_available %></strong></article>
+      </div>
+
+      <div class="content-grid two-wide-one-narrow">
+        <article class="card section-card">
+          <div class="section-card-header">
+            <h2>Мої та доступні замовлення</h2>
+            <a href="/orders" class="text-link">До списку</a>
+          </div>
+          <div class="list-stack compact-list">
+            <% dashboard.assignedOrders.forEach((order) => { %>
+              <a href="/orders/<%= order.id %>" class="list-row list-row-link">
+                <div>
+                  <strong><%= order.title %></strong>
+                  <p><%= order.category_name || 'Без категорії' %> · <%= order.customer_name %></p>
+                </div>
+                <div class="row-meta right-align">
+                  <span class="status-badge status-<%= order.status %>"><%= orderStatusLabels[order.status] %></span>
+                  <span>до <%= helpers.formatDate(order.deadline) %></span>
+                </div>
+              </a>
+            <% }) %>
+          </div>
+        </article>
+
+        <article class="card section-card">
+          <div class="section-card-header">
+            <h2>Портфоліо</h2>
+            <a href="/profile" class="text-link">Профіль</a>
+          </div>
+          <div class="list-stack compact-list">
+            <% if (dashboard.portfolioPreview.length) { %>
+              <% dashboard.portfolioPreview.forEach((item) => { %>
+                <div class="list-row">
+                  <div>
+                    <strong><%= item.title %></strong>
+                    <p><%= item.summary %></p>
+                  </div>
+                  <div class="row-meta right-align">
+                    <span><%= helpers.formatDate(item.completed_at) %></span>
+                    <% if (item.rating) { %><span><%= item.rating %>/5</span><% } %>
+                  </div>
+                </div>
+              <% }) %>
+            <% } else { %>
+              <p class="empty-state small">Поки що немає завершених робіт у портфоліо.</p>
+            <% } %>
+          </div>
+        </article>
+      </div>
+    <% } %>
+
+    <% if (dashboard.type === 'customer') { %>
+      <div class="stats-grid four-cols">
+        <article class="card stat-card"><span class="stat-label">Нові</span><strong class="stat-value"><%= dashboard.stats.new_count %></strong></article>
+        <article class="card stat-card"><span class="stat-label">У роботі</span><strong class="stat-value"><%= dashboard.stats.in_progress %></strong></article>
+        <article class="card stat-card"><span class="stat-label">Потребує уточнення</span><strong class="stat-value"><%= dashboard.stats.needs_clarification %></strong></article>
+        <article class="card stat-card"><span class="stat-label">Завершені</span><strong class="stat-value"><%= dashboard.stats.completed %></strong></article>
+      </div>
+
+      <article class="card section-card">
+        <div class="section-card-header">
+          <h2>Мої замовлення</h2>
+          <a href="/orders?scope=mine" class="text-link">Увесь список</a>
+        </div>
+        <div class="list-stack compact-list">
+          <% dashboard.myOrders.forEach((order) => { %>
+            <a href="/orders/<%= order.id %>" class="list-row list-row-link">
+              <div>
+                <strong><%= order.title %></strong>
+                <p><%= order.category_name || 'Без категорії' %> <% if (order.performer_name) { %>· <%= order.performer_name %><% } %></p>
+              </div>
+              <div class="row-meta right-align">
+                <span class="status-badge status-<%= order.status %>"><%= orderStatusLabels[order.status] %></span>
+                <span><%= order.progress %>%</span>
+              </div>
+            </a>
+          <% }) %>
+        </div>
+      </article>
+    <% } %>
+
+    <article class="card section-card">
+      <div class="section-card-header">
+        <h2>Остання активність</h2>
+      </div>
+      <div class="timeline-list">
+        <% dashboard.recentActivity.forEach((item) => { %>
+          <div class="timeline-item">
+            <span class="timeline-dot"></span>
+            <div>
+              <strong><%= item.title %></strong>
+              <p><%= item.description || 'Опис відсутній.' %></p>
+              <small><%= helpers.formatDateTime(item.created_at) %> · <%= item.order_title || 'Системна подія' %></small>
+            </div>
+          </div>
+        <% }) %>
+      </div>
+    </article>
+  </div>
+
+  <% if (dashboard.type !== 'admin') { %>
+    <aside class="dashboard-sidebar">
+      <article class="card profile-summary-card">
+        <div class="profile-summary-header">
+          <div class="avatar-circle large"><%= helpers.initials(profile.full_name) %></div>
+          <div>
+            <h2><%= profile.full_name %></h2>
+            <p><%= roleLabels[profile.role] || profile.role %></p>
+          </div>
+        </div>
+        <div class="profile-summary-grid">
+          <div><span>Рейтинг</span><strong><%= Number(profile.rating_avg || 0).toFixed(2) %></strong></div>
+          <div><span>Репутація</span><strong><%= profile.reputation_points || 0 %></strong></div>
+          <div><span>Рівень</span><strong><%= profile.level_label %></strong></div>
+          <div><span>Спеціальність</span><strong><%= profile.specialty_title || '—' %></strong></div>
+        </div>
+        <p class="muted-text"><%= profile.bio || 'Короткий опис профілю ще не додано.' %></p>
+        <a href="/profile" class="btn btn-outline btn-block">Редагувати профіль</a>
+      </article>
+    </aside>
+  <% } %>
+</div>
+  </div>
+</section>

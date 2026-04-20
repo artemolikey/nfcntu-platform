@@ -1,0 +1,218 @@
+<section class="hero-section">
+  <div class="container hero-grid">
+    <div class="hero-copy">
+      <span class="eyebrow">Внутрішня навчальна платформа коледжу</span>
+      <h1>Сучасна система для розміщення, виконання та супроводу студентських замовлень.</h1>
+      <p class="lead">
+        Платформа об'єднує замовників, виконавців і адміністратора в одному цифровому середовищі: замовлення,
+        комунікація, файли, прогрес, відгуки, рейтинг, репутація та портфоліо.
+      </p>
+      <div class="hero-actions">
+        <% if (currentUser) { %>
+          <a href="/dashboard" class="btn btn-primary btn-lg">Перейти в кабінет</a>
+          <a href="/orders" class="btn btn-secondary btn-lg">Переглянути замовлення</a>
+        <% } else { %>
+          <a href="/auth/register" class="btn btn-primary btn-lg">Створити обліковий запис</a>
+          <a href="/auth/login" class="btn btn-secondary btn-lg">Увійти в систему</a>
+        <% } %>
+      </div>
+      <div class="hero-note card subtle-card">
+        <strong>Важливо:</strong> реєстрація доступна лише для корпоративних електронних адрес коледжу
+        <span class="mono"><%= allowedEmailDomain %></span>.
+      </div>
+    </div>
+
+    <div class="hero-panel card hero-visual-card">
+      <div class="hero-panel-top">
+        <img src="/assets/img/logo.png" alt="Логотип коледжу" class="hero-logo" />
+        <div>
+          <strong><%= collegeName %></strong>
+          <p>Стриманий брендинг, світлий SaaS-інтерфейс і логіка реального внутрішнього продукту.</p>
+        </div>
+      </div>
+      <div class="hero-mini-grid">
+        <article class="mini-metric">
+          <span class="mini-metric-value"><%= stats.performers_total %></span>
+          <span class="mini-metric-label">виконавців</span>
+        </article>
+        <article class="mini-metric">
+          <span class="mini-metric-value"><%= stats.orders_total %></span>
+          <span class="mini-metric-label">замовлень</span>
+        </article>
+        <article class="mini-metric">
+          <span class="mini-metric-value"><%= stats.completed_total %></span>
+          <span class="mini-metric-label">завершено</span>
+        </article>
+        <article class="mini-metric">
+          <span class="mini-metric-value"><%= stats.reviews_total %></span>
+          <span class="mini-metric-label">відгуків</span>
+        </article>
+      </div>
+      <div class="hero-feature-list">
+        <div class="feature-inline"><span class="dot"></span> Корпоративна автентифікація</div>
+        <div class="feature-inline"><span class="dot"></span> Замовлення, чат і файли</div>
+        <div class="feature-inline"><span class="dot"></span> Репутація, рейтинг і портфоліо</div>
+        <div class="feature-inline"><span class="dot"></span> Окрема адмін-панель</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container stats-grid four-cols">
+    <article class="stat-card card">
+      <span class="stat-label">Виконавці</span>
+      <strong class="stat-value"><%= stats.performers_total %></strong>
+      <p class="stat-text">Активні студенти-виконавці з різних спеціальностей коледжу.</p>
+    </article>
+    <article class="stat-card card">
+      <span class="stat-label">Замовлення</span>
+      <strong class="stat-value"><%= stats.orders_total %></strong>
+      <p class="stat-text">Реалістичні кейси з веброзробки, права, логістики, обліку та інших напрямів.</p>
+    </article>
+    <article class="stat-card card">
+      <span class="stat-label">Завершені роботи</span>
+      <strong class="stat-value"><%= stats.completed_total %></strong>
+      <p class="stat-text">Кожен завершений кейс фіксується в системі та поповнює портфоліо виконавця.</p>
+    </article>
+    <article class="stat-card card">
+      <span class="stat-label">Відгуки</span>
+      <strong class="stat-value"><%= stats.reviews_total %></strong>
+      <p class="stat-text">Після завершення замовник залишає оцінку, текстовий відгук і формує репутацію.</p>
+    </article>
+  </div>
+</section>
+
+<section class="section section-alt" id="how-it-works">
+  <div class="container">
+    <div class="section-heading">
+      <span class="eyebrow">Як це працює</span>
+      <h2>Повний цикл виконання замовлення без зайвих модулів і візуального шуму.</h2>
+      <p>Кожен сценарій будується навколо реальної навчальної взаємодії між замовником і виконавцем.</p>
+    </div>
+
+    <div class="feature-grid five-cols">
+      <article class="feature-card card">
+        <div class="feature-index">01</div>
+        <h3>Створення завдання</h3>
+        <p>Замовник формує запит, обирає спеціальність, категорію, опис та дедлайн.</p>
+      </article>
+      <article class="feature-card card">
+        <div class="feature-index">02</div>
+        <h3>Вибір виконавця</h3>
+        <p>Студент-виконавець переглядає доступні замовлення і бере відповідний кейс у роботу.</p>
+      </article>
+      <article class="feature-card card">
+        <div class="feature-index">03</div>
+        <h3>Комунікація</h3>
+        <p>У межах конкретного замовлення доступні чат, прикріплення файлів та журнал активності.</p>
+      </article>
+      <article class="feature-card card">
+        <div class="feature-index">04</div>
+        <h3>Контроль прогресу</h3>
+        <p>Система показує статус, дедлайн, відсоток виконання та ключові зміни по задачі.</p>
+      </article>
+      <article class="feature-card card">
+        <div class="feature-index">05</div>
+        <h3>Відгук і портфоліо</h3>
+        <p>Після завершення замовник залишає рейтинг, а система поповнює портфоліо виконавця.</p>
+      </article>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="benefits">
+  <div class="container">
+    <div class="section-heading compact">
+      <span class="eyebrow">Переваги платформи</span>
+      <h2>Реальна логіка внутрішнього продукту для коледжу.</h2>
+    </div>
+
+    <div class="feature-grid three-cols">
+      <article class="feature-card card">
+        <h3>Корпоративна реєстрація</h3>
+        <p>Доступ лише для користувачів із корпоративними адресами <span class="mono"><%= allowedEmailDomain %></span>.</p>
+      </article>
+      <article class="feature-card card">
+        <h3>Нематеріальна мотивація</h3>
+        <p>Рейтинг, відгуки, репутаційні бали, рівні виконавця та портфоліо замість модулів оплати.</p>
+      </article>
+      <article class="feature-card card">
+        <h3>Окрема адміністративна зона</h3>
+        <p>Адміністратор бачить статистику, користувачів, замовлення та стан усієї системи.</p>
+      </article>
+    </div>
+  </div>
+</section>
+
+<section class="section section-alt">
+  <div class="container two-column-section">
+    <div>
+      <div class="section-heading compact">
+        <span class="eyebrow">Спеціальності та категорії</span>
+        <h2>Система одразу налаштована на реалістичні дані коледжу.</h2>
+      </div>
+      <div class="chips-wrap">
+        <% specialties.forEach((specialty) => { %>
+          <span class="chip"><%= specialty.code %> · <%= specialty.short_name %></span>
+        <% }); %>
+      </div>
+    </div>
+    <div>
+      <div class="section-heading compact">
+        <span class="eyebrow">Категорії замовлень</span>
+        <h2>Від веброзробки до правових документів та технічних кейсів.</h2>
+      </div>
+      <div class="chips-wrap">
+        <% categories.forEach((category) => { %>
+          <span class="chip chip-muted"><%= category.name %></span>
+        <% }); %>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    <div class="section-heading compact">
+      <span class="eyebrow">Приклади сильних виконавців</span>
+      <h2>Топові профілі з рейтингом, рівнем і спеціальністю.</h2>
+    </div>
+
+    <div class="feature-grid four-cols">
+      <% performers.forEach((performer) => { %>
+        <article class="card performer-card">
+          <div class="avatar-circle"><%= helpers.initials(performer.full_name) %></div>
+          <h3><%= performer.full_name %></h3>
+          <p class="muted-text"><%= performer.specialty_title || 'Без спеціальності' %></p>
+          <div class="stacked-metrics">
+            <span><strong><%= Number(performer.rating_avg).toFixed(2) %></strong> / 5.00</span>
+            <span><%= performer.level_label %></span>
+          </div>
+        </article>
+      <% }) %>
+    </div>
+  </div>
+</section>
+
+<section class="section section-alt">
+  <div class="container">
+    <div class="section-heading compact">
+      <span class="eyebrow">Відгуки</span>
+      <h2>Що замовники бачать після завершення замовлення.</h2>
+    </div>
+
+    <div class="feature-grid three-cols">
+      <% testimonials.forEach((item) => { %>
+        <article class="card testimonial-card">
+          <div class="rating-badge"><%= item.rating %> / 5</div>
+          <p class="testimonial-text">“<%= item.review_text %>”</p>
+          <div class="testimonial-meta">
+            <strong><%= item.customer_name %></strong>
+            <span><%= item.title %></span>
+          </div>
+        </article>
+      <% }) %>
+    </div>
+  </div>
+</section>

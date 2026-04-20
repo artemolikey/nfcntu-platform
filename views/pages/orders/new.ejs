@@ -1,0 +1,64 @@
+<section class="page-section">
+  <div class="container narrow-container wide-form-container">
+    <div class="page-heading">
+      <div>
+        <span class="eyebrow">Створення замовлення</span>
+        <h1>Нове замовлення</h1>
+        <p>Форма оптимізована для чистого й професійного інтерфейсу: короткі поля, допоміжні тексти та логічні групи.</p>
+      </div>
+    </div>
+
+    <article class="card section-card">
+      <form action="/orders/new" method="post" class="form-stack" data-reference-context>
+        <div class="form-grid two-columns">
+          <div class="field">
+            <label for="title">Назва замовлення</label>
+            <input id="title" name="title" type="text" placeholder="Коротка назва" value="<%= formData.title || '' %>" required />
+            <small class="helper-text">Назва має чітко описувати завдання.</small>
+            <% if (errors.title) { %><small class="error-text"><%= errors.title %></small><% } %>
+          </div>
+          <div class="field">
+            <label for="deadline">Дедлайн</label>
+            <input id="deadline" name="deadline" type="date" value="<%= formData.deadline || '' %>" required />
+            <small class="helper-text">Дедлайн має бути пізнішим за поточну дату.</small>
+            <% if (errors.deadline) { %><small class="error-text"><%= errors.deadline %></small><% } %>
+          </div>
+          <div class="field">
+            <label for="specialtyId">Спеціальність</label>
+            <select id="specialtyId" name="specialtyId" data-specialty-control data-target-category="#categoryId" required>
+              <option value="">Оберіть спеціальність</option>
+              <% referenceData.specialties.forEach((specialty) => { %>
+                <option value="<%= specialty.id %>" <%= String(formData.specialtyId || '') === String(specialty.id) ? 'selected' : '' %>><%= specialty.code %> · <%= specialty.title %></option>
+              <% }) %>
+            </select>
+            <% if (errors.specialtyId) { %><small class="error-text"><%= errors.specialtyId %></small><% } %>
+          </div>
+          <div class="field">
+            <label for="categoryId">Категорія</label>
+            <select id="categoryId" name="categoryId" data-dependent-category required>
+              <option value="">Оберіть категорію</option>
+              <% referenceData.categories.forEach((category) => { %>
+                <option value="<%= category.id %>" data-specialty-id="<%= category.specialty_id || '' %>" <%= String(formData.categoryId || '') === String(category.id) ? 'selected' : '' %>><%= category.name %></option>
+              <% }) %>
+            </select>
+            <small class="helper-text">Показуються категорії, що відповідають обраній спеціальності або є універсальними.</small>
+            <% if (errors.categoryId) { %><small class="error-text"><%= errors.categoryId %></small><% } %>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="description">Опис завдання</label>
+          <textarea id="description" name="description" rows="8" placeholder="Опишіть задачу, очікуваний результат, вимоги та контекст."><%= formData.description || '' %></textarea>
+          <small class="helper-text">Виконавець має зрозуміти зміст роботи, обсяг і бажаний формат результату.</small>
+          <% if (errors.description) { %><small class="error-text"><%= errors.description %></small><% } %>
+        </div>
+
+        <div class="card-actions">
+          <button type="submit" class="btn btn-primary">Створити замовлення</button>
+          <a href="/orders" class="btn btn-outline">Скасувати</a>
+        </div>
+      </form>
+      <script id="reference-data" type="application/json"><%- JSON.stringify(referenceData) %></script>
+    </article>
+  </div>
+</section>

@@ -1,0 +1,138 @@
+<section class="page-section">
+  <div class="container">
+    <div class="page-heading">
+      <div>
+        <span class="eyebrow">Профіль користувача</span>
+        <h1><%= profileView.user.full_name %></h1>
+        <p>Оновіть персональні дані, спеціальність, групу та короткий опис профілю. Для виконавців нижче відображається портфоліо та репутація.</p>
+      </div>
+    </div>
+
+    <div class="content-grid one-narrow-one-wide">
+      <aside class="sidebar-stack">
+        <article class="card profile-summary-card">
+          <div class="profile-summary-header">
+            <div class="avatar-circle large"><%= helpers.initials(profileView.user.full_name) %></div>
+            <div>
+              <h2><%= profileView.user.full_name %></h2>
+              <p><%= roleLabels[profileView.user.role] || profileView.user.role %></p>
+            </div>
+          </div>
+          <div class="profile-summary-grid">
+            <div><span>Рейтинг</span><strong><%= Number(profileView.user.rating_avg || 0).toFixed(2) %></strong></div>
+            <div><span>Репутація</span><strong><%= profileView.user.reputation_points || 0 %></strong></div>
+            <div><span>Рівень</span><strong><%= profileView.user.level_label %></strong></div>
+            <div><span>Група</span><strong><%= profileView.user.group_code || '—' %></strong></div>
+          </div>
+          <div class="key-value-list">
+            <div><span>Email</span><strong><%= profileView.user.email %></strong></div>
+            <div><span>Телефон</span><strong><%= profileView.user.phone || '—' %></strong></div>
+            <div><span>Спеціальність</span><strong><%= profileView.user.specialty_title || '—' %></strong></div>
+          </div>
+          <p class="muted-text"><%= profileView.user.bio || 'Опис профілю поки відсутній.' %></p>
+        </article>
+
+        <% if (profileView.user.role === 'performer') { %>
+          <article class="card section-card">
+            <div class="section-card-header">
+              <h2>Показники виконавця</h2>
+            </div>
+            <div class="mini-summary-grid">
+              <div><span>У роботі</span><strong><%= profileView.performerSummary.orderCounts.in_progress %></strong></div>
+              <div><span>Потребує уточнення</span><strong><%= profileView.performerSummary.orderCounts.needs_clarification %></strong></div>
+              <div><span>Завершено</span><strong><%= profileView.performerSummary.orderCounts.completed %></strong></div>
+              <div><span>Портфоліо</span><strong><%= profileView.performerSummary.portfolioCount %></strong></div>
+            </div>
+          </article>
+        <% } %>
+
+        <% if (profileView.user.role === 'customer') { %>
+          <article class="card section-card">
+            <div class="section-card-header">
+              <h2>Статистика замовника</h2>
+            </div>
+            <div class="mini-summary-grid">
+              <div><span>Нові</span><strong><%= profileView.customerSummary.new_count %></strong></div>
+              <div><span>У роботі</span><strong><%= profileView.customerSummary.in_progress %></strong></div>
+              <div><span>Потребує уточнення</span><strong><%= profileView.customerSummary.needs_clarification %></strong></div>
+              <div><span>Завершені</span><strong><%= profileView.customerSummary.completed %></strong></div>
+            </div>
+          </article>
+        <% } %>
+      </aside>
+
+      <div class="main-stack">
+        <article class="card section-card">
+          <div class="section-card-header">
+            <h2>Редагування профілю</h2>
+          </div>
+          <form action="/profile" method="post" class="form-stack" data-reference-context>
+            <% const initial = formData || { fullName: profileView.user.full_name, phone: profileView.user.phone, specialtyId: profileView.user.specialty_id, academicGroupId: profileView.user.academic_group_id, bio: profileView.user.bio }; %>
+            <div class="form-grid two-columns">
+              <div class="field">
+                <label for="fullName">ПІБ</label>
+                <input id="fullName" name="fullName" type="text" value="<%= initial.fullName || '' %>" placeholder="Повне ім'я" required />
+                <% if (errors.fullName) { %><small class="error-text"><%= errors.fullName %></small><% } %>
+              </div>
+              <div class="field">
+                <label for="phone">Телефон</label>
+                <input id="phone" name="phone" type="text" value="<%= initial.phone || '' %>" placeholder="+380..." />
+                <% if (errors.phone) { %><small class="error-text"><%= errors.phone %></small><% } %>
+              </div>
+              <div class="field">
+                <label for="specialtyId">Спеціальність</label>
+                <select id="specialtyId" name="specialtyId" data-specialty-control data-target-group="#academicGroupId">
+                  <option value="">Оберіть спеціальність</option>
+                  <% referenceData.specialties.forEach((specialty) => { %>
+                    <option value="<%= specialty.id %>" <%= String(initial.specialtyId || '') === String(specialty.id) ? 'selected' : '' %>><%= specialty.code %> · <%= specialty.title %></option>
+                  <% }) %>
+                </select>
+                <% if (errors.specialtyId) { %><small class="error-text"><%= errors.specialtyId %></small><% } %>
+              </div>
+              <div class="field">
+                <label for="academicGroupId">Група</label>
+                <select id="academicGroupId" name="academicGroupId" data-dependent-group>
+                  <option value="">Оберіть групу</option>
+                  <% referenceData.groups.forEach((group) => { %>
+                    <option value="<%= group.id %>" data-specialty-id="<%= group.specialty_id %>" <%= String(initial.academicGroupId || '') === String(group.id) ? 'selected' : '' %>><%= group.code %></option>
+                  <% }) %>
+                </select>
+                <% if (errors.academicGroupId) { %><small class="error-text"><%= errors.academicGroupId %></small><% } %>
+              </div>
+            </div>
+            <div class="field">
+              <label for="bio">Короткий опис профілю</label>
+              <textarea id="bio" name="bio" rows="5" placeholder="Опишіть свій досвід, навички та фокус навчання."><%= initial.bio || '' %></textarea>
+              <% if (errors.bio) { %><small class="error-text"><%= errors.bio %></small><% } %>
+            </div>
+            <button type="submit" class="btn btn-primary">Зберегти зміни</button>
+          </form>
+          <script id="reference-data" type="application/json"><%- JSON.stringify(referenceData) %></script>
+        </article>
+
+        <% if (profileView.portfolio.length) { %>
+          <article class="card section-card">
+            <div class="section-card-header">
+              <h2>Портфоліо виконавця</h2>
+            </div>
+            <div class="list-stack portfolio-list">
+              <% profileView.portfolio.forEach((item) => { %>
+                <div class="list-row portfolio-row">
+                  <div>
+                    <strong><%= item.title %></strong>
+                    <p><%= item.summary %></p>
+                    <small>Замовник: <%= item.customer_name %></small>
+                  </div>
+                  <div class="row-meta right-align">
+                    <span><%= helpers.formatDate(item.completed_at) %></span>
+                    <% if (item.rating) { %><span class="rating-badge"><%= item.rating %>/5</span><% } %>
+                  </div>
+                </div>
+              <% }) %>
+            </div>
+          </article>
+        <% } %>
+      </div>
+    </div>
+  </div>
+</section>

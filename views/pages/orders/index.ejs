@@ -1,0 +1,99 @@
+<section class="page-section">
+  <div class="container">
+    <div class="page-heading">
+      <div>
+        <span class="eyebrow">Замовлення</span>
+        <h1>Список замовлень платформи</h1>
+        <p>Фільтруйте замовлення за статусом, спеціальністю, категорією або сферою видимості залежно від вашої ролі.</p>
+      </div>
+      <div class="page-actions">
+        <% if (currentUser.role === 'customer' || currentUser.role === 'admin') { %>
+          <a href="/orders/new" class="btn btn-primary">Створити замовлення</a>
+        <% } %>
+      </div>
+    </div>
+
+    <form action="/orders" method="get" class="card filters-card">
+      <div class="form-grid filters-grid">
+        <div class="field">
+          <label for="search">Пошук</label>
+          <input id="search" name="search" type="text" value="<%= filters.search || '' %>" placeholder="Назва або опис" />
+        </div>
+        <div class="field">
+          <label for="status">Статус</label>
+          <select id="status" name="status">
+            <option value="">Усі статуси</option>
+            <% Object.entries(orderStatusLabels).forEach(([key, label]) => { %>
+              <option value="<%= key %>" <%= filters.status === key ? 'selected' : '' %>><%= label %></option>
+            <% }) %>
+          </select>
+        </div>
+        <div class="field">
+          <label for="specialtyId">Спеціальність</label>
+          <select id="specialtyId" name="specialtyId">
+            <option value="">Усі спеціальності</option>
+            <% referenceData.specialties.forEach((specialty) => { %>
+              <option value="<%= specialty.id %>" <%= String(filters.specialtyId || '') === String(specialty.id) ? 'selected' : '' %>><%= specialty.code %> · <%= specialty.short_name %></option>
+            <% }) %>
+          </select>
+        </div>
+        <div class="field">
+          <label for="categoryId">Категорія</label>
+          <select id="categoryId" name="categoryId">
+            <option value="">Усі категорії</option>
+            <% referenceData.categories.forEach((category) => { %>
+              <option value="<%= category.id %>" <%= String(filters.categoryId || '') === String(category.id) ? 'selected' : '' %>><%= category.name %></option>
+            <% }) %>
+          </select>
+        </div>
+        <div class="field">
+          <label for="scope">Сфера</label>
+          <select id="scope" name="scope">
+            <option value="" <%= filters.scope === '' ? 'selected' : '' %>>Усі доступні</option>
+            <% if (currentUser.role === 'customer') { %>
+              <option value="mine" <%= filters.scope === 'mine' ? 'selected' : '' %>>Мої замовлення</option>
+            <% } %>
+            <% if (currentUser.role === 'performer') { %>
+              <option value="assigned" <%= filters.scope === 'assigned' ? 'selected' : '' %>>Мої в роботі</option>
+              <option value="available" <%= filters.scope === 'available' ? 'selected' : '' %>>Доступні нові</option>
+            <% } %>
+          </select>
+        </div>
+      </div>
+      <div class="filters-actions">
+        <button type="submit" class="btn btn-primary">Застосувати</button>
+        <a href="/orders" class="btn btn-outline">Скинути</a>
+      </div>
+    </form>
+
+    <% if (orders.length) { %>
+      <div class="order-grid">
+        <% orders.forEach((order) => { %>
+          <article class="card order-card">
+            <div class="order-card-top">
+              <span class="status-badge status-<%= order.status %>"><%= helpers.statusLabel(order.status) %></span>
+              <span class="muted-text">до <%= helpers.formatDate(order.deadline) %></span>
+            </div>
+            <h2><a href="/orders/<%= order.id %>"><%= order.title %></a></h2>
+            <p class="muted-text"><%= order.category_name || 'Без категорії' %> · <%= order.specialty_title || 'Без спеціальності' %></p>
+            <div class="order-meta-list">
+              <div><span>Замовник</span><strong><%= order.customer_name %></strong></div>
+              <div><span>Виконавець</span><strong><%= order.performer_name || 'Ще не призначено' %></strong></div>
+              <div><span>Прогрес</span><strong><%= order.progress %>%</strong></div>
+              <div><span>Відгук</span><strong><%= order.has_review ? 'Є' : 'Немає' %></strong></div>
+            </div>
+            <div class="progress-bar"><span style="width: <%= order.progress %>%"></span></div>
+            <div class="card-actions right-align">
+              <a href="/orders/<%= order.id %>" class="btn btn-secondary">Детальніше</a>
+            </div>
+          </article>
+        <% }) %>
+      </div>
+    <% } else { %>
+      <div class="card empty-state">
+        <h2>Замовлень не знайдено</h2>
+        <p>Спробуйте змінити фільтри або створіть нове замовлення, якщо це доступно для вашої ролі.</p>
+      </div>
+    <% } %>
+  </div>
+</section>

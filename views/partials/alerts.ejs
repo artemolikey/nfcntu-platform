@@ -1,0 +1,10 @@
+<% if (flash || formError) { %>
+  <div class="container alerts-stack">
+    <% if (flash) { %>
+      <div class="alert alert-<%= flash.type %>"><%= flash.message %></div>
+    <% } %>
+    <% if (formError) { %>
+      <div class="alert alert-danger"><%= formError %></div>
+    <% } %>
+  </div>
+<% } %>
