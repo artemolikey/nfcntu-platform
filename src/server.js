@@ -18,6 +18,7 @@ const adminRoutes = require('./routes/admin.routes');
 
 function buildSessionStore() {
   if (env.isPgMem) return undefined;
+
   const PgStore = require('connect-pg-simple')(session);
   return new PgStore({
     pool,
@@ -33,30 +34,38 @@ async function createApp({ bootstrap = true } = {}) {
 
   const app = express();
 
+  app.set('trust proxy', 1);
   app.set('view engine', 'ejs');
   app.set('views', path.join(__dirname, '..', 'views'));
   app.set('layout', 'layouts/main');
 
-  app.use(helmet({
-    contentSecurityPolicy: false,
-    crossOriginEmbedderPolicy: false
-  }));
+  app.use(
+    helmet({
+      contentSecurityPolicy: false,
+      crossOriginEmbedderPolicy: false
+    })
+  );
+
   app.use(morgan(env.isProduction ? 'combined' : 'dev'));
   app.use(express.urlencoded({ extended: true }));
   app.use(express.json());
   app.use(expressLayouts);
-  app.use(session({
-    secret: env.sessionSecret,
-    resave: false,
-    saveUninitialized: false,
-    store: buildSessionStore(),
-    cookie: {
-      httpOnly: true,
-      sameSite: 'lax',
-      secure: env.isProduction,
-      maxAge: 1000 * 60 * 60 * 24 * 7
-    }
-  }));
+
+  app.use(
+    session({
+      secret: env.sessionSecret,
+      resave: false,
+      saveUninitialized: false,
+      proxy: true,
+      store: buildSessionStore(),
+      cookie: {
+        httpOnly: true,
+        sameSite: 'lax',
+        secure: env.isProduction,
+        maxAge: 1000 * 60 * 60 * 24 * 7
+      }
+    })
+  );
 
   app.use('/assets', express.static(path.join(__dirname, '..', 'public', 'assets')));
   app.use('/uploads', express.static(env.uploadsDir));
@@ -80,6 +89,7 @@ async function createApp({ bootstrap = true } = {}) {
         bodyClass: 'error-page'
       });
     }
+
     return res.status(404).json({ error: 'Not found' });
   });
 
@@ -87,13 +97,17 @@ async function createApp({ bootstrap = true } = {}) {
     if (req.file && req.file.path) {
       // no-op; file is intentionally preserved to avoid accidental data loss on partial failures
     }
+
     const statusCode = error.statusCode || 500;
+
     if (!env.isProduction) {
       console.error(error);
     }
+
     if (res.headersSent) {
       return next(error);
     }
+
     if (req.accepts('html')) {
       return res.status(statusCode).render('pages/error', {
         pageTitle: statusCode === 500 ? 'Помилка сервера' : 'Помилка',
@@ -102,7 +116,10 @@ async function createApp({ bootstrap = true } = {}) {
         bodyClass: 'error-page'
       });
     }
-    return res.status(statusCode).json({ error: error.message || 'Internal server error' });
+
+    return res.status(statusCode).json({
+      error: error.message || 'Internal server error'
+    });
   });
 
   return app;
@@ -110,9 +127,10 @@ async function createApp({ bootstrap = true } = {}) {
 
 async function startServer() {
   const app = await createApp();
+
   return new Promise((resolve) => {
-    const server = app.listen(env.port, () => {
-      console.log(`NFCNTU platform started on ${env.appUrl}`);
+    const server = app.listen(env.port, '0.0.0.0', () => {
+      console.log(`NFCNTU platform started on port ${env.port}`);
       resolve({ app, server });
     });
   });
