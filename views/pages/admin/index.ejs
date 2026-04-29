@@ -19,56 +19,70 @@
       <article class="card stat-card"><span class="stat-label">Завершені</span><strong class="stat-value"><%= overview.stats.completed_orders %></strong></article>
     </div>
 
-    <div class="content-grid two-columns top-gap">
-      <article class="card section-card">
-        <div class="section-card-header">
-          <h2>Останні користувачі</h2>
-          <a href="/admin/users" class="text-link">Відкрити повний список</a>
-        </div>
-        <div class="data-table-wrap">
-          <table class="data-table">
-            <thead>
-              <tr>
-                <th>Користувач</th>
-                <th>Роль</th>
-                <th>Статус</th>
-              </tr>
-            </thead>
-            <tbody>
-              <% overview.recentUsers.forEach((user) => { %>
-                <tr>
-                  <td>
-                    <strong><%= user.full_name %></strong>
-                    <div class="table-subtext"><%= user.email %></div>
-                  </td>
-                  <td><%= roleLabels[user.role] || user.role %></td>
-                  <td><span class="status-badge <%= user.is_active ? 'status-completed' : 'status-needs_clarification' %>"><%= user.is_active ? 'Активний' : 'Неактивний' %></span></td>
-                </tr>
-              <% }) %>
-            </tbody>
-          </table>
-        </div>
-      </article>
-
-      <article class="card section-card">
-        <div class="section-card-header">
-          <h2>Останні замовлення</h2>
-          <a href="/admin/orders" class="text-link">Перейти до замовлень</a>
-        </div>
-        <div class="list-stack compact-list">
-          <% overview.recentOrders.forEach((order) => { %>
-            <a href="/orders/<%= order.id %>" class="list-row list-row-link">
-              <div>
-                <strong><%= order.title %></strong>
-                <p><%= order.customer_name %> <% if (order.performer_name) { %>· <%= order.performer_name %><% } %></p>
-              </div>
-              <div class="row-meta right-align">
-                <span class="status-badge status-<%= order.status %>"><%= orderStatusLabels[order.status] %></span>
-                <span><%= order.progress %>%</span>
-              </div>
-            </a>
-          <% }) %>
-        </div>
-      </article>
+  <div class="admin-dashboard-stack top-gap">
+  <article class="card section-card admin-users-card">
+    <div class="section-card-header">
+      <h2>Останні користувачі</h2>
+      <a href="/admin/users" class="text-link">Відкрити повний список</a>
     </div>
 
+    <div class="data-table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Користувач</th>
+            <th>Роль</th>
+            <th>Статус</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% overview.recentUsers.forEach((user) => { %>
+            <tr>
+              <td>
+                <strong><%= user.full_name %></strong>
+                <div class="table-subtext"><%= user.email %></div>
+              </td>
+              <td><%= roleLabels[user.role] || user.role %></td>
+              <td>
+                <span class="status-badge <%= user.is_active ? 'status-completed' : 'status-needs_clarification' %>">
+                  <%= user.is_active ? 'Активний' : 'Неактивний' %>
+                </span>
+              </td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+  </article>
+
+  <article class="card section-card admin-orders-card">
+    <div class="section-card-header">
+      <h2>Останні замовлення</h2>
+      <a href="/admin/orders" class="text-link">Перейти до замовлень</a>
+    </div>
+
+    <div class="admin-orders-grid">
+      <% overview.recentOrders.forEach((order) => { %>
+        <a href="/orders/<%= order.id %>" class="admin-order-mini-card">
+          <div class="admin-order-mini-top">
+            <span class="status-badge status-<%= order.status %>"><%= orderStatusLabels[order.status] %></span>
+            <strong><%= order.progress %>%</strong>
+          </div>
+
+          <h3><%= order.title %></h3>
+
+          <p>
+            <%= order.customer_name %>
+            <% if (order.performer_name) { %>
+              · <%= order.performer_name %>
+            <% } %>
+          </p>
+
+          <div class="progress-bar">
+            <span style="width: <%= order.progress %>%"></span>
+          </div>
+        </a>
+      <% }) %>
+    </div>
+  </article>
+</div>
