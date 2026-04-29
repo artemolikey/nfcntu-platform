@@ -7,10 +7,16 @@ const { findUserById } = require('../services/user.service');
 const router = express.Router();
 
 router.get('/', requireAuth, asyncHandler(async (req, res) => {
-  const [dashboard, profile] = await Promise.all([
-    getUserDashboardData(req.session.authUser),
-    findUserById(req.session.authUser.id)
-  ]);
+  const profile = await findUserById(req.session.authUser.id);
+
+  if (!profile) {
+    req.session.destroy(() => {
+      return res.redirect('/auth/login');
+    });
+    return;
+  }
+
+  const dashboard = await getUserDashboardData(req.session.authUser);
 
   res.render('pages/dashboard', {
     pageTitle: 'Dashboard',

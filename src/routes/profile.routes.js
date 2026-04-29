@@ -19,11 +19,21 @@ function firstErrors(result) {
   return errors;
 }
 
+function destroySessionAndRedirect(req, res) {
+  req.session.destroy(() => {
+    return res.redirect('/auth/login');
+  });
+}
+
 async function renderProfile(req, res, overrides = {}) {
   const [profileView, referenceData] = await Promise.all([
     getProfileView(req.session.authUser.id),
     getReferenceData()
   ]);
+
+  if (!profileView || !profileView.user) {
+    return destroySessionAndRedirect(req, res);
+  }
 
   res.render('pages/profile/show', {
     pageTitle: 'Профіль',
@@ -83,11 +93,18 @@ router.post('/', requireAuth, [
 
   if (req.session.authUser.role !== ROLES.ADMIN) {
     if (!req.body.specialtyId || !req.body.academicGroupId) {
-      return renderProfile(req, res, { formError: 'Для студентських ролей потрібно вказати спеціальність і групу.', formData });
+      return renderProfile(req, res, {
+        formError: 'Для студентських ролей потрібно вказати спеціальність і групу.',
+        formData
+      });
     }
+
     const group = await getAcademicGroupById(req.body.academicGroupId);
     if (!group || Number(group.specialty_id) !== Number(req.body.specialtyId)) {
-      return renderProfile(req, res, { formError: 'Обрана група не відповідає зазначеній спеціальності.', formData });
+      return renderProfile(req, res, {
+        formError: 'Обрана група не відповідає зазначеній спеціальності.',
+        formData
+      });
     }
   }
 
@@ -100,8 +117,14 @@ router.post('/', requireAuth, [
   });
 
   const refreshedUser = await findUserById(req.session.authUser.id);
+
+  if (!refreshedUser) {
+    return destroySessionAndRedirect(req, res);
+  }
+
   req.session.authUser = buildSessionUser(refreshedUser);
   await saveSession(req);
+
   setFlash(req, 'success', 'Профіль успішно оновлено.');
   return res.redirect('/profile');
 }));
