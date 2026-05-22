@@ -51,7 +51,16 @@ CREATE TABLE IF NOT EXISTS orders (
   performer_id UUID REFERENCES users(id) ON DELETE SET NULL,
   specialty_id INTEGER REFERENCES specialties(id) ON DELETE SET NULL,
   category_id INTEGER REFERENCES order_categories(id) ON DELETE SET NULL,
-  status VARCHAR(30) NOT NULL DEFAULT 'new' CHECK (status IN ('new', 'in_progress', 'completed', 'needs_clarification')),
+  status VARCHAR(30) NOT NULL DEFAULT 'new' CHECK (
+  status IN (
+    'new',
+    'in_progress',
+    'pending_review',
+    'completed',
+    'needs_revision',
+    'needs_clarification'
+  )
+),
   deadline DATE NOT NULL,
   progress INTEGER NOT NULL DEFAULT 0 CHECK (progress >= 0 AND progress <= 100),
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -111,9 +120,23 @@ CREATE TABLE IF NOT EXISTS activity_logs (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+CREATE TABLE IF NOT EXISTS order_applications (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  order_id UUID NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
+  performer_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  message TEXT,
+  status VARCHAR(20) NOT NULL DEFAULT 'pending'
+    CHECK (status IN ('pending', 'accepted', 'rejected')),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE(order_id, performer_id)
+);
+
 CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status);
 CREATE INDEX IF NOT EXISTS idx_orders_customer ON orders(customer_id);
 CREATE INDEX IF NOT EXISTS idx_orders_performer ON orders(performer_id);
 CREATE INDEX IF NOT EXISTS idx_messages_order_time ON order_messages(order_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_files_order_time ON order_files(order_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_activity_order_time ON activity_logs(order_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_order_applications_order ON order_applications(order_id);
+CREATE INDEX IF NOT EXISTS idx_order_applications_performer ON order_applications(performer_id);

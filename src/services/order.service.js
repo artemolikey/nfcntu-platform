@@ -23,12 +23,23 @@ function getPermissions(order, currentUser) {
   const isCustomer = order.customer_id === currentUser.id;
   const isPerformer = order.performer_id === currentUser.id;
   const isParticipant = isAdmin || isCustomer || isPerformer;
+
   return {
     isAdmin,
     isCustomer,
     isPerformer,
     isParticipant,
-    canTake: currentUser.role === ROLES.PERFORMER && !order.performer_id && order.status === ORDER_STATUSES.NEW,
+
+    canApply:
+      currentUser.role === ROLES.PERFORMER &&
+      !order.performer_id &&
+      order.status === ORDER_STATUSES.NEW,
+
+    canManageApplications:
+      (isCustomer || isAdmin) &&
+      !order.performer_id &&
+      order.status === ORDER_STATUSES.NEW,
+
     canUpdateStatus: isParticipant,
     canUpdateProgress: isAdmin || isPerformer,
     canReview: isCustomer && order.status === ORDER_STATUSES.COMPLETED && !!order.performer_id && !order.review_id,
@@ -88,6 +99,131 @@ async function createOrder({ title, description, customerId, specialtyId, catego
   });
 }
 
+async function submitOrderForReview(orderId, actor) {
+  return withTransaction(async (client) => {
+    const order = await getOrderBase(orderId, client);
+
+    if (!order) {
+      throw new Error('Замовлення не знайдено.');
+    }
+
+    if (order.performer_id !== actor.id) {
+      throw new Error('Лише виконавець може здати роботу.');
+    }
+
+    await client.query(`
+      UPDATE orders
+      SET status = 'pending_review',
+          progress = 100,
+          updated_at = NOW()
+      WHERE id = $1
+    `, [orderId]);
+
+    await addActivity(client, {
+      orderId,
+      actorId: actor.id,
+      actionType: 'submitted_for_review',
+      title: 'Роботу передано на перевірку',
+      description: 'Виконавець завершив роботу та передав її замовнику.'
+    });
+
+    return getOrderBase(orderId, client);
+  });
+}
+
+async function confirmOrderCompletion(orderId, actor) {
+  return withTransaction(async (client) => {
+    const order = await getOrderBase(orderId, client);
+
+    if (!order) {
+      throw new Error('Замовлення не знайдено.');
+    }
+
+    if (order.customer_id !== actor.id && actor.role !== ROLES.ADMIN) {
+      throw new Error('Лише замовник може підтвердити виконання.');
+    }
+
+    if (order.status !== 'pending_review') {
+      throw new Error('Замовлення не передано на перевірку.');
+    }
+
+    await client.query(`
+      UPDATE orders
+      SET status = 'completed',
+          progress = 100,
+          updated_at = NOW()
+      WHERE id = $1
+    `, [orderId]);
+
+const existingPortfolio = await client.query(`
+  SELECT id
+  FROM portfolio_entries
+  WHERE order_id = $1
+  LIMIT 1
+`, [orderId]);
+
+if (!existingPortfolio.rows.length) {
+  await client.query(`
+    INSERT INTO portfolio_entries (
+      performer_id,
+      order_id,
+      title,
+      summary,
+      completed_at
+    )
+    VALUES ($1, $2, $3, $4, NOW())
+  `, [
+    order.performer_id,
+    orderId,
+    order.title,
+    'Роботу успішно завершено та підтверджено замовником.'
+  ]);
+}
+
+    await addActivity(client, {
+      orderId,
+      actorId: actor.id,
+      actionType: 'order_completed',
+      title: 'Замовлення завершено',
+      description: 'Замовник підтвердив виконання роботи.'
+    });
+
+    return getOrderBase(orderId, client);
+  });
+}
+
+
+async function requestRevision(orderId, actor) {
+  return withTransaction(async (client) => {
+    const order = await getOrderBase(orderId, client);
+
+    if (!order) {
+      throw new Error('Замовлення не знайдено.');
+    }
+
+if (order.customer_id !== actor.id && actor.role !== ROLES.ADMIN) {
+  throw new Error('Лише замовник може відправити роботу на доопрацювання.');
+}
+
+    await client.query(`
+      UPDATE orders
+      SET status = 'needs_revision',
+          updated_at = NOW()
+      WHERE id = $1
+    `, [orderId]);
+
+    await addActivity(client, {
+      orderId,
+      actorId: actor.id,
+      actionType: 'revision_requested',
+      title: 'Потрібне доопрацювання',
+      description: 'Замовник повернув роботу на доопрацювання.'
+    });
+
+    return getOrderBase(orderId, client);
+  });
+}
+
 async function getOrderMessages(orderId) {
   const result = await query(`SELECT m.id,m.body,m.created_at,u.id AS sender_id,u.full_name AS sender_name FROM order_messages m JOIN users u ON u.id = m.sender_id WHERE m.order_id = $1 ORDER BY m.created_at ASC`, [orderId]);
   return result.rows;
@@ -106,13 +242,72 @@ async function getOrderActivity(orderId) {
 async function getOrderDetail(orderId, currentUser) {
   const order = await getOrderBase(orderId);
   if (!order) return null;
+
   const permissions = getPermissions(order, currentUser);
-  const [messages, files, activity] = await Promise.all([
+
+  const [messages, files, activity, applications, currentApplication] = await Promise.all([
     permissions.canUsePrivateBlocks ? getOrderMessages(orderId) : Promise.resolve([]),
     permissions.canUsePrivateBlocks ? getOrderFiles(orderId) : Promise.resolve([]),
-    getOrderActivity(orderId)
+    getOrderActivity(orderId),
+
+    permissions.canManageApplications
+      ? getOrderApplications(orderId)
+      : Promise.resolve([]),
+
+    currentUser.role === ROLES.PERFORMER
+      ? getUserOrderApplication(orderId, currentUser.id)
+      : Promise.resolve(null)
   ]);
-  return { order, permissions, messages, files, activity };
+
+  return {
+    order,
+    permissions,
+    messages,
+    files,
+    activity,
+    applications,
+    currentApplication
+  };
+}
+
+async function getOrderApplications(orderId) {
+  const result = await query(`
+    SELECT
+      oa.id,
+      oa.message,
+      oa.status,
+      oa.created_at,
+      u.id AS performer_id,
+      u.full_name AS performer_name,
+      u.rating_avg,
+      u.reputation_points,
+      u.level_label,
+      s.short_name AS specialty_name
+    FROM order_applications oa
+    JOIN users u ON u.id = oa.performer_id
+    LEFT JOIN specialties s ON s.id = u.specialty_id
+    WHERE oa.order_id = $1
+    ORDER BY
+      CASE oa.status
+        WHEN 'pending' THEN 1
+        WHEN 'accepted' THEN 2
+        ELSE 3
+      END,
+      oa.created_at DESC
+  `, [orderId]);
+
+  return result.rows;
+}
+
+async function getUserOrderApplication(orderId, performerId) {
+  const result = await query(`
+    SELECT *
+    FROM order_applications
+    WHERE order_id = $1 AND performer_id = $2
+    LIMIT 1
+  `, [orderId, performerId]);
+
+  return result.rows[0] || null;
 }
 
 async function assignPerformer(orderId, performerId, actorId) {
@@ -122,6 +317,105 @@ async function assignPerformer(orderId, performerId, actorId) {
     if (order.performer_id) throw new Error('У цього замовлення вже є виконавець.');
     await client.query(`UPDATE orders SET performer_id = $2, status = $3, progress = GREATEST(progress, 10) WHERE id = $1`, [orderId, performerId, ORDER_STATUSES.IN_PROGRESS]);
     await addActivity(client, { orderId, actorId, actionType: 'performer_assigned', title: 'Замовлення взято в роботу', description: 'Виконавець долучився до виконання.' });
+    return getOrderBase(orderId, client);
+  });
+}
+
+async function createOrderApplication(orderId, performer, message = '') {
+  const safeMessage = String(message || '').trim();
+
+  return withTransaction(async (client) => {
+    const order = await getOrderBase(orderId, client);
+
+    if (!order) throw new Error('Замовлення не знайдено.');
+    if (performer.role !== ROLES.PERFORMER) throw new Error('Заявку може подати лише виконавець.');
+    if (order.performer_id) throw new Error('Для цього замовлення вже призначено виконавця.');
+    if (order.status !== ORDER_STATUSES.NEW) throw new Error('Заявку можна подати лише на нове замовлення.');
+
+    const existing = await client.query(`
+      SELECT id
+      FROM order_applications
+      WHERE order_id = $1 AND performer_id = $2
+      LIMIT 1
+    `, [orderId, performer.id]);
+
+    if (existing.rows.length) {
+      throw new Error('Ви вже подали заявку на це замовлення.');
+    }
+
+    await client.query(`
+      INSERT INTO order_applications (order_id, performer_id, message)
+      VALUES ($1, $2, $3)
+    `, [orderId, performer.id, safeMessage || null]);
+
+    await addActivity(client, {
+      orderId,
+      actorId: performer.id,
+      actionType: 'application_created',
+      title: 'Подано заявку',
+      description: 'Виконавець подав заявку на виконання замовлення.'
+    });
+  });
+}
+
+async function acceptOrderApplication(orderId, applicationId, actor) {
+  return withTransaction(async (client) => {
+    const order = await getOrderBase(orderId, client);
+
+    if (!order) throw new Error('Замовлення не знайдено.');
+
+    const isCustomer = order.customer_id === actor.id;
+    const isAdmin = actor.role === ROLES.ADMIN;
+
+    if (!isCustomer && !isAdmin) {
+      throw new Error('Приймати заявки може лише замовник або адміністратор.');
+    }
+
+    if (order.performer_id) {
+      throw new Error('Для цього замовлення вже призначено виконавця.');
+    }
+
+    if (order.status !== ORDER_STATUSES.NEW) {
+      throw new Error('Заявку можна прийняти лише для нового замовлення.');
+    }
+
+    const appResult = await client.query(`
+      SELECT *
+      FROM order_applications
+      WHERE id = $1 AND order_id = $2 AND status = 'pending'
+      LIMIT 1
+    `, [applicationId, orderId]);
+
+    const application = appResult.rows[0];
+
+    if (!application) {
+      throw new Error('Заявку не знайдено або вона вже оброблена.');
+    }
+
+    await client.query(`
+      UPDATE orders
+      SET performer_id = $2,
+          status = $3,
+          progress = GREATEST(progress, 10),
+          updated_at = NOW()
+      WHERE id = $1
+    `, [orderId, application.performer_id, ORDER_STATUSES.IN_PROGRESS]);
+
+    await client.query(`
+      UPDATE order_applications
+      SET status = CASE WHEN id = $2 THEN 'accepted' ELSE 'rejected' END,
+          updated_at = NOW()
+      WHERE order_id = $1
+    `, [orderId, applicationId]);
+
+    await addActivity(client, {
+      orderId,
+      actorId: actor.id,
+      actionType: 'application_accepted',
+      title: 'Заявку прийнято',
+      description: 'Замовник обрав виконавця для виконання замовлення.'
+    });
+
     return getOrderBase(orderId, client);
   });
 }
@@ -411,4 +705,25 @@ async function getLandingPageData() {
   return { stats: statsResult.rows[0], performers: performersResult.rows, testimonials: testimonialsResult.rows };
 }
 
-module.exports = { listOrders, createOrder, getOrderDetail, assignPerformer, updateOrderStatus, updateOrderProgress, addOrderMessage, addOrderFile, getOrderFileForDownload, createOrderReview, getUserDashboardData, getLandingPageData, getOrderMessages, getOrderBase, getPermissions };
+module.exports = {
+  listOrders,
+  createOrder,
+  getOrderDetail,
+  assignPerformer,
+  createOrderApplication,
+  acceptOrderApplication,
+  updateOrderStatus,
+  updateOrderProgress,
+  addOrderMessage,
+  addOrderFile,
+  getOrderFileForDownload,
+  createOrderReview,
+  getUserDashboardData,
+  getLandingPageData,
+  getOrderMessages,
+  getOrderBase,
+  getPermissions,
+    submitOrderForReview,
+  confirmOrderCompletion,
+  requestRevision,
+};

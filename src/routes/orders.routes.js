@@ -7,7 +7,24 @@ const { requireAuth, requireRoles, requireCustomerOrAdmin } = require('../middle
 const { setFlash } = require('../utils/flash');
 const { ORDER_STATUSES, ROLES } = require('../config/constants');
 const { getReferenceData, getCategoryById } = require('../services/reference.service');
-const { listOrders, createOrder, getOrderDetail, assignPerformer, updateOrderStatus, updateOrderProgress, addOrderMessage, addOrderFile, getOrderFileForDownload, createOrderReview, getOrderMessages } = require('../services/order.service');
+
+const {
+  listOrders,
+  createOrder,
+  getOrderDetail,
+  updateOrderStatus,
+  updateOrderProgress,
+  addOrderMessage,
+  addOrderFile,
+  getOrderFileForDownload,
+  createOrderReview,
+  getOrderMessages,
+  createOrderApplication,
+  acceptOrderApplication,
+  submitOrderForReview,
+confirmOrderCompletion,
+requestRevision
+} = require('../services/order.service');
 
 const router = express.Router();
 
@@ -23,7 +40,7 @@ function firstErrors(result) {
 
 function defaultScopeForUser(user) {
   if (user.role === ROLES.CUSTOMER) return 'mine';
-  if (user.role === ROLES.PERFORMER) return 'assigned';
+  if (user.role === ROLES.PERFORMER) return 'available';
   return '';
 }
 
@@ -75,6 +92,39 @@ router.get('/new', requireCustomerOrAdmin, asyncHandler(async (req, res) => {
   await renderCreateOrder(req, res);
 }));
 
+router.post('/:orderId/submit-review', requireRoles(ROLES.PERFORMER), asyncHandler(async (req, res) => {
+  try {
+    await submitOrderForReview(req.params.orderId, req.session.authUser);
+    setFlash(req, 'success', 'Роботу передано на перевірку.');
+  } catch (error) {
+    setFlash(req, 'danger', error.message);
+  }
+
+  return res.redirect(`/orders/${req.params.orderId}`);
+}));
+
+router.post('/:orderId/confirm', requireRoles(ROLES.CUSTOMER), asyncHandler(async (req, res) => {
+  try {
+    await confirmOrderCompletion(req.params.orderId, req.session.authUser);
+    setFlash(req, 'success', 'Замовлення успішно завершено.');
+  } catch (error) {
+    setFlash(req, 'danger', error.message);
+  }
+
+  return res.redirect(`/orders/${req.params.orderId}`);
+}));
+
+router.post('/:orderId/revision', requireRoles(ROLES.CUSTOMER), asyncHandler(async (req, res) => {
+  try {
+    await requestRevision(req.params.orderId, req.session.authUser);
+    setFlash(req, 'success', 'Роботу відправлено на доопрацювання.');
+  } catch (error) {
+    setFlash(req, 'danger', error.message);
+  }
+
+  return res.redirect(`/orders/${req.params.orderId}`);
+}));
+
 router.post('/new', requireCustomerOrAdmin, [
   body('title')
     .trim()
@@ -109,16 +159,25 @@ router.post('/new', requireCustomerOrAdmin, [
   }
 
   if (!isFutureDate(req.body.deadline)) {
-    return renderCreateOrder(req, res, { formError: 'Дедлайн має бути пізнішим за поточну дату.', formData });
+    return renderCreateOrder(req, res, {
+      formError: 'Дедлайн має бути пізнішим за поточну дату.',
+      formData
+    });
   }
 
   const category = await getCategoryById(req.body.categoryId);
   if (!category) {
-    return renderCreateOrder(req, res, { formError: 'Обрана категорія не знайдена.', formData });
+    return renderCreateOrder(req, res, {
+      formError: 'Обрана категорія не знайдена.',
+      formData
+    });
   }
 
   if (category.specialty_id && Number(category.specialty_id) !== Number(req.body.specialtyId)) {
-    return renderCreateOrder(req, res, { formError: 'Категорія не відповідає обраній спеціальності.', formData });
+    return renderCreateOrder(req, res, {
+      formError: 'Категорія не відповідає обраній спеціальності.',
+      formData
+    });
   }
 
   const order = await createOrder({
@@ -153,15 +212,50 @@ router.get('/:orderId', requireAuth, asyncHandler(async (req, res) => {
   });
 }));
 
-router.post('/:orderId/take', requireRoles(ROLES.PERFORMER), asyncHandler(async (req, res) => {
+router.post('/:orderId/apply', requireRoles(ROLES.PERFORMER), [
+  body('message')
+    .optional({ checkFalsy: true })
+    .trim()
+    .isLength({ max: 1000 }).withMessage('Повідомлення до заявки не може перевищувати 1000 символів.')
+], asyncHandler(async (req, res) => {
+  const result = validationResult(req);
+
+  if (!result.isEmpty()) {
+    setFlash(req, 'danger', result.array()[0].msg);
+    return res.redirect(`/orders/${req.params.orderId}`);
+  }
+
   try {
-    await assignPerformer(req.params.orderId, req.session.authUser.id, req.session.authUser.id);
-    setFlash(req, 'success', 'Замовлення успішно взято в роботу.');
+    await createOrderApplication(
+      req.params.orderId,
+      req.session.authUser,
+      req.body.message
+    );
+
+    setFlash(req, 'success', 'Заявку успішно подано. Очікуйте підтвердження замовника.');
   } catch (error) {
     setFlash(req, 'danger', error.message);
   }
+
   return res.redirect(`/orders/${req.params.orderId}`);
 }));
+
+router.post('/:orderId/applications/:applicationId/accept', requireAuth, asyncHandler(async (req, res) => {
+  try {
+    await acceptOrderApplication(
+      req.params.orderId,
+      req.params.applicationId,
+      req.session.authUser
+    );
+
+    setFlash(req, 'success', 'Виконавця успішно призначено.');
+  } catch (error) {
+    setFlash(req, 'danger', error.message);
+  }
+
+  return res.redirect(`/orders/${req.params.orderId}`);
+}));
+
 
 router.post('/:orderId/status', requireAuth, [
   body('status').isIn(Object.values(ORDER_STATUSES)).withMessage('Оберіть коректний статус.')

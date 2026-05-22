@@ -6,8 +6,10 @@
           <span class="status-badge status-<%= detail.order.status %>"><%= helpers.statusLabel(detail.order.status) %></span>
           <span class="muted-text">Створено <%= helpers.formatDate(detail.order.created_at) %></span>
         </div>
+
         <h1><%= detail.order.title %></h1>
         <p class="lead"><%= detail.order.description %></p>
+
         <div class="detail-meta-grid">
           <div><span>Замовник</span><strong><%= detail.order.customer_name %></strong></div>
           <div><span>Виконавець</span><strong><%= detail.order.performer_name || 'Ще не призначено' %></strong></div>
@@ -17,54 +19,182 @@
           <div><span>Прогрес</span><strong><%= detail.order.progress %>%</strong></div>
         </div>
       </div>
+
       <div class="detail-hero-side">
         <div class="progress-ring-card">
           <div class="progress-ring-label">Прогрес виконання</div>
           <div class="progress-value"><%= detail.order.progress %>%</div>
-          <div class="progress-bar large"><span style="width: <%= detail.order.progress %>%"></span></div>
+          <div class="progress-bar large"><span style="width:<%= detail.order.progress %>%"></span></div>
         </div>
-        <% if (detail.permissions.canTake) { %>
-          <form action="/orders/<%= detail.order.id %>/take" method="post">
-            <button type="submit" class="btn btn-primary btn-block">Взяти в роботу</button>
+
+        <% if (detail.permissions.canApply && !detail.currentApplication) { %>
+          <form action="/orders/<%= detail.order.id %>/apply" method="post" class="form-stack">
+            <div class="field">
+              <label for="applicationMessage">Повідомлення до заявки</label>
+              <textarea
+                id="applicationMessage"
+                name="message"
+                rows="3"
+                placeholder="Коротко опишіть, чому ви можете виконати це замовлення."
+              ></textarea>
+            </div>
+            <button type="submit" class="btn btn-primary btn-block">Подати заявку</button>
           </form>
+        <% } else if (detail.currentApplication) { %>
+          <div class="empty-state small">
+            <h3>Заявку вже подано</h3>
+          <p>
+  Статус заявки:
+  <strong>
+    <%= detail.currentApplication.status === 'pending'
+      ? 'Очікує підтвердження'
+      : detail.currentApplication.status === 'accepted'
+      ? 'Прийнято'
+      : 'Відхилено' %>
+  </strong>
+</p>
+          </div>
         <% } %>
       </div>
     </div>
 
+    <% if (detail.permissions.canManageApplications) { %>
+      <article class="card section-card top-gap">
+        <div class="section-card-header">
+          <h2>Заявки виконавців</h2>
+          <span class="muted-text">Замовник може обрати одного виконавця для роботи</span>
+        </div>
+
+        <% if (detail.applications && detail.applications.length) { %>
+          <div class="list-stack">
+            <% detail.applications.forEach((application) => { %>
+              <div class="list-row">
+                <div>
+                  <strong><%= application.performer_name %></strong>
+                  <p>
+                    <%= application.specialty_name || 'Спеціальність не вказана' %>
+                    · рейтинг <%= Number(application.rating_avg || 0).toFixed(2) %>
+                    · <%= application.level_label %>
+                  </p>
+
+                  <% if (application.message) { %>
+                    <p><%= application.message %></p>
+                  <% } else { %>
+                    <p class="muted-text">Повідомлення до заявки відсутнє.</p>
+                  <% } %>
+
+                  <small>Подано <%= helpers.formatDateTime(application.created_at) %></small>
+                </div>
+
+                <div class="row-meta right-align">
+                  <span class="status-badge status-<%= application.status %>">
+                    <%= application.status === 'pending' ? 'Очікує' : application.status === 'accepted' ? 'Прийнято' : 'Відхилено' %>
+                  </span>
+
+                  <% if (application.status === 'pending') { %>
+                    <form action="/orders/<%= detail.order.id %>/applications/<%= application.id %>/accept" method="post">
+                      <button type="submit" class="btn btn-primary">Прийняти</button>
+                    </form>
+                  <% } %>
+                </div>
+              </div>
+            <% }) %>
+          </div>
+        <% } else { %>
+          <div class="empty-state small">
+            <h3>Заявок ще немає</h3>
+            <p>Коли виконавці подадуть заявки, вони з’являться у цьому блоці.</p>
+          </div>
+        <% } %>
+      </article>
+    <% } %>
+
     <div class="content-grid two-wide-one-narrow top-gap">
       <div class="main-stack">
-        <article class="card section-card">
-          <div class="section-card-header">
-            <h2>Керування замовленням</h2>
-          </div>
-          <div class="form-grid action-grid">
-            <% if (detail.permissions.canUpdateStatus) { %>
-              <form action="/orders/<%= detail.order.id %>/status" method="post" class="inline-card-form">
-                <div class="field no-margin">
-                  <label for="status">Статус</label>
-                  <select id="status" name="status">
-                    <% statusOptions.forEach((status) => { %>
-                      <% if (!(currentUser.role === 'performer' && status === 'completed')) { %>
-                        <option value="<%= status %>" <%= detail.order.status === status ? 'selected' : '' %>><%= orderStatusLabels[status] %></option>
-                      <% } %>
-                    <% }) %>
-                  </select>
-                </div>
-                <button type="submit" class="btn btn-secondary">Оновити статус</button>
-              </form>
-            <% } %>
+<article class="card section-card">
+  <div class="section-card-header">
+    <h2>Керування замовленням</h2>
+  </div>
 
-            <% if (detail.permissions.canUpdateProgress) { %>
-              <form action="/orders/<%= detail.order.id %>/progress" method="post" class="inline-card-form">
-                <div class="field no-margin">
-                  <label for="progress">Прогрес, %</label>
-                  <input id="progress" name="progress" type="number" min="0" max="100" value="<%= detail.order.progress %>" placeholder="0-100" />
-                </div>
-                <button type="submit" class="btn btn-outline">Зберегти прогрес</button>
-              </form>
-            <% } %>
-          </div>
-        </article>
+  <div class="form-grid action-grid">
+
+    <% if (
+      detail.permissions.isPerformer &&
+      (
+        detail.order.status === 'in_progress' ||
+        detail.order.status === 'needs_revision'
+      )
+    ) { %>
+
+      <form
+        action="/orders/<%= detail.order.id %>/submit-review"
+        method="post"
+        class="inline-card-form"
+      >
+        <button type="submit" class="btn btn-primary">
+          Передати на перевірку
+        </button>
+      </form>
+
+    <% } %>
+
+    <% if (
+      detail.permissions.isCustomer &&
+      detail.order.status === 'pending_review'
+    ) { %>
+
+      <form
+        action="/orders/<%= detail.order.id %>/confirm"
+        method="post"
+        class="inline-card-form"
+      >
+        <button type="submit" class="btn btn-primary">
+          Підтвердити виконання
+        </button>
+      </form>
+
+      <form
+        action="/orders/<%= detail.order.id %>/revision"
+        method="post"
+        class="inline-card-form"
+      >
+        <button type="submit" class="btn btn-outline">
+          На доопрацювання
+        </button>
+      </form>
+
+    <% } %>
+
+    <% if (detail.permissions.canUpdateProgress) { %>
+
+      <form
+        action="/orders/<%= detail.order.id %>/progress"
+        method="post"
+        class="inline-card-form"
+      >
+        <div class="field no-margin">
+          <label for="progress">Прогрес, %</label>
+
+          <input
+            id="progress"
+            name="progress"
+            type="number"
+            min="0"
+            max="100"
+            value="<%= detail.order.progress %>"
+            placeholder="0-100"
+          />
+        </div>
+
+        <button type="submit" class="btn btn-outline">
+          Зберегти прогрес
+        </button>
+      </form>
+
+    <% } %>
+
+  </div>
+</article>
 
         <article class="card section-card" id="chat">
           <div class="section-card-header">
@@ -88,14 +218,15 @@
                 <% }) %>
               </div>
             </div>
+
             <form action="/orders/<%= detail.order.id %>/messages" method="post" class="chat-form">
               <textarea name="message" rows="3" placeholder="Напишіть коротке повідомлення для учасників замовлення."></textarea>
               <button type="submit" class="btn btn-primary">Надіслати повідомлення</button>
             </form>
           <% } else { %>
             <div class="empty-state small">
-              <h3>Чат стане доступним після участі в замовленні</h3>
-              <p>Повідомлення можуть бачити лише замовник, виконавець і адміністратор.</p>
+              <h3>Чат стане доступним після призначення виконавця</h3>
+              <p>Повідомлення можуть бачити лише замовник, обраний виконавець і адміністратор.</p>
             </div>
           <% } %>
         </article>
@@ -104,11 +235,13 @@
           <div class="section-card-header">
             <h2>Файли</h2>
           </div>
+
           <% if (detail.permissions.canUsePrivateBlocks) { %>
             <form action="/orders/<%= detail.order.id %>/files" method="post" enctype="multipart/form-data" class="file-upload-form">
               <input type="file" name="attachment" />
               <button type="submit" class="btn btn-secondary">Завантажити файл</button>
             </form>
+
             <% if (detail.files.length) { %>
               <div class="list-stack file-list">
                 <% detail.files.forEach((file) => { %>
@@ -130,7 +263,7 @@
           <% } else { %>
             <div class="empty-state small">
               <h3>Файли доступні лише учасникам</h3>
-              <p>Після взяття замовлення в роботу тут з’явиться файловий блок для обміну матеріалами.</p>
+              <p>Після призначення виконавця тут з’явиться файловий блок для обміну матеріалами.</p>
             </div>
           <% } %>
         </article>
@@ -139,29 +272,55 @@
           <div class="section-card-header">
             <h2>Відгук і рейтинг</h2>
           </div>
-          <% if (detail.order.review_id) { %>
-            <div class="review-card">
-              <div class="review-score"><%= detail.order.review_rating %> / 5</div>
-              <p><%= detail.order.review_text %></p>
-              <small>Нараховано репутаційних балів: <strong><%= detail.order.reputation_awarded %></strong></small>
-            </div>
-          <% } else if (detail.permissions.canReview) { %>
+
+   <% if (detail.order.review_id) { %>
+  <div class="review-card clean-review">
+    <div class="review-top">
+      <div>
+        <span class="review-label">Оцінка виконання</span>
+        <div class="review-score">
+          <%= detail.order.review_rating %> / 5
+        </div>
+      </div>
+
+      <div class="review-stars">
+        <% for (let i = 1; i <= 5; i += 1) { %>
+          <span class="<%= i <= detail.order.review_rating ? 'active' : '' %>">★</span>
+        <% } %>
+      </div>
+    </div>
+
+    <div class="review-text">
+      <span class="review-label">Текстовий відгук</span>
+      <p><%= detail.order.review_text %></p>
+    </div>
+
+    <div class="review-points">
+      Нараховано репутаційних балів:
+      <strong><%= detail.order.reputation_awarded %></strong>
+    </div>
+  </div>
+<% } else if (detail.permissions.canReview) { %>
             <form action="/orders/<%= detail.order.id %>/review" method="post" class="form-stack">
-              <div class="form-grid two-columns narrow-gaps">
-                <div class="field">
-                  <label for="rating">Оцінка</label>
-                  <select id="rating" name="rating" required>
-                    <option value="">Оберіть оцінку</option>
-                    <% for (let i = 5; i >= 1; i -= 1) { %>
-                      <option value="<%= i %>"><%= i %> / 5</option>
-                    <% } %>
-                  </select>
-                </div>
-              </div>
+  <div class="review-form-grid">
+  <div class="field">
+  <label>Оцінка виконання</label>
+
+  <div class="rating-options">
+    <% for (let i = 5; i >= 1; i -= 1) { %>
+      <label class="rating-option">
+        <input type="radio" name="rating" value="<%= i %>" required>
+        <span><%= i %> ★</span>
+      </label>
+    <% } %>
+  </div>
+</div>
+
               <div class="field">
                 <label for="reviewText">Текстовий відгук</label>
                 <textarea id="reviewText" name="reviewText" rows="5" placeholder="Опишіть якість виконання, сильні сторони та результат співпраці." required></textarea>
               </div>
+
               <button type="submit" class="btn btn-primary">Зберегти відгук</button>
             </form>
           <% } else { %>
@@ -175,6 +334,7 @@
           <div class="section-card-header">
             <h2>Журнал активності</h2>
           </div>
+
           <div class="timeline-list">
             <% detail.activity.forEach((item) => { %>
               <div class="timeline-item">
@@ -182,7 +342,10 @@
                 <div>
                   <strong><%= item.title %></strong>
                   <p><%= item.description || 'Опис відсутній.' %></p>
-                  <small><%= helpers.formatDateTime(item.created_at) %><% if (item.actor_name) { %> · <%= item.actor_name %><% } %></small>
+                  <small>
+                    <%= helpers.formatDateTime(item.created_at) %>
+                    <% if (item.actor_name) { %> · <%= item.actor_name %><% } %>
+                  </small>
                 </div>
               </div>
             <% }) %>
@@ -193,10 +356,11 @@
           <div class="section-card-header">
             <h2>Пам'ятка</h2>
           </div>
+
           <div class="note-list">
+            <div class="note-item">Виконавець спочатку подає заявку, а замовник обирає кандидата.</div>
+            <div class="note-item">Чат і файли доступні після призначення виконавця.</div>
             <div class="note-item">Замовник підтверджує завершення роботи та залишає відгук.</div>
-            <div class="note-item">Виконавець може оновлювати прогрес і вести переписку в межах задачі.</div>
-            <div class="note-item">Адміністратор має огляд усієї системи й доступ до контролю станів.</div>
           </div>
         </article>
       </aside>

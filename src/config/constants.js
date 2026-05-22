@@ -17,6 +17,8 @@ const ROLE_LABELS = {
 const ORDER_STATUSES = {
   NEW: 'new',
   IN_PROGRESS: 'in_progress',
+  PENDING_REVIEW: 'pending_review',
+  NEEDS_REVISION: 'needs_revision',
   NEEDS_CLARIFICATION: 'needs_clarification',
   COMPLETED: 'completed'
 };
@@ -24,6 +26,8 @@ const ORDER_STATUSES = {
 const ORDER_STATUS_LABELS = {
   [ORDER_STATUSES.NEW]: 'Нове',
   [ORDER_STATUSES.IN_PROGRESS]: 'В роботі',
+  [ORDER_STATUSES.PENDING_REVIEW]: 'На перевірці',
+  [ORDER_STATUSES.NEEDS_REVISION]: 'На доопрацюванні',
   [ORDER_STATUSES.NEEDS_CLARIFICATION]: 'Потребує уточнення',
   [ORDER_STATUSES.COMPLETED]: 'Завершене'
 };

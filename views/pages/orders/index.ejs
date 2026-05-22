@@ -1,15 +1,35 @@
 <section class="page-section">
   <div class="container">
-    <div class="page-heading">
-      <div>
+    <div class="page-heading page-heading-flex">
+      <div class="page-heading-main">
         <span class="eyebrow">Замовлення</span>
         <h1>Список замовлень платформи</h1>
         <p>Фільтруйте замовлення за статусом, спеціальністю, категорією або сферою видимості залежно від вашої ролі.</p>
       </div>
-      <div class="page-actions">
+      <div class="page-actions page-actions-top">
         <% if (currentUser.role === 'customer' || currentUser.role === 'admin') { %>
           <a href="/orders/new" class="btn btn-primary">Створити замовлення</a>
         <% } %>
+      </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="orders-summary-strip">
+      <div class="summary-card summary-card-all">
+        <span class="summary-label">Усього замовлень</span>
+        <strong class="summary-value"><%= orders.length %></strong>
+      </div>
+      <div class="summary-card summary-card-active">
+        <span class="summary-label">Активних</span>
+        <strong class="summary-value"><%= orders.filter(o => o.status === 'in_progress').length %></strong>
+      </div>
+      <div class="summary-card summary-card-completed">
+        <span class="summary-label">Завершених</span>
+        <strong class="summary-value"><%= orders.filter(o => o.status === 'completed').length %></strong>
+      </div>
+      <div class="summary-card summary-card-pending">
+        <span class="summary-label">Очікування</span>
+        <strong class="summary-value"><%= orders.filter(o => o.status === 'pending').length %></strong>
       </div>
     </div>
 
@@ -76,11 +96,31 @@
             </div>
             <h2><a href="/orders/<%= order.id %>"><%= order.title %></a></h2>
             <p class="muted-text"><%= order.category_name || 'Без категорії' %> · <%= order.specialty_title || 'Без спеціальності' %></p>
-            <div class="order-meta-list">
-              <div><span>Замовник</span><strong><%= order.customer_name %></strong></div>
-              <div><span>Виконавець</span><strong><%= order.performer_name || 'Ще не призначено' %></strong></div>
-              <div><span>Прогрес</span><strong><%= order.progress %>%</strong></div>
-              <div><span>Відгук</span><strong><%= order.has_review ? 'Є' : 'Немає' %></strong></div>
+            <div class="order-meta-list order-meta-compact">
+<div class="meta-chip">
+  <span>Замовник</span>
+  <strong class="meta-user-name">
+    <%= order.customer_name
+      ? order.customer_name.split(' ').slice(0, 2).join(' ')
+      : 'Не вказано' %>
+  </strong>
+</div>
+<div class="meta-chip">
+  <span>Виконавець</span>
+  <strong class="meta-user-name">
+    <%= order.performer_name
+      ? order.performer_name.split(' ').slice(0, 2).join(' ')
+      : 'Не призначено' %>
+  </strong>
+</div>
+              <div class="meta-chip progress-chip">
+                <span>Прогрес</span>
+                <strong><%= order.progress %>%</strong>
+              </div>
+              <div class="meta-chip review-chip">
+                <span>Відгук</span>
+                <strong><%= order.has_review ? '✓' : '—' %></strong>
+              </div>
             </div>
             <div class="progress-bar"><span style="width: <%= order.progress %>%"></span></div>
             <div class="card-actions right-align">
