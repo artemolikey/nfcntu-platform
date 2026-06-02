@@ -498,7 +498,17 @@ async function createOrderReview(orderId, customer, rating, reviewText) {
     if (order.review_id) throw new Error('Для цього замовлення відгук уже існує.');
     const reputationAwarded = REVIEW_POINTS[safeRating];
     await client.query(`INSERT INTO order_reviews (order_id,customer_id,performer_id,rating,review_text,reputation_awarded) VALUES ($1,$2,$3,$4,$5,$6)`, [orderId, customer.id, order.performer_id, safeRating, safeText, reputationAwarded]);
-    await client.query(`INSERT INTO portfolio_entries (performer_id,order_id,title,summary,completed_at,rating,review_excerpt) VALUES ($1,$2,$3,$4,NOW(),$5,$6)`, [order.performer_id, orderId, order.title, safeText, safeRating, safeText]);
+await client.query(`
+  UPDATE portfolio_entries
+  SET
+    rating = $2,
+    review_excerpt = $3
+  WHERE order_id = $1
+`, [
+  orderId,
+  safeRating,
+  safeText
+]);
     const stats = await client.query(`SELECT COALESCE(AVG(rating),0) AS rating_avg, COALESCE(SUM(reputation_awarded),0) AS reputation_points FROM order_reviews WHERE performer_id = $1`, [order.performer_id]);
     const ratingAvg = Number(stats.rows[0].rating_avg || 0);
     const reputationPoints = Number(stats.rows[0].reputation_points || 0);
